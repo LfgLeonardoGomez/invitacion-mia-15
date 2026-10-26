@@ -271,6 +271,110 @@ def inspect_music(browser):
     return {"playlist_real_audio_lazy_load_navigation_pause_wrap_rapid_skip_and_error_recovery": True, "passed": True}
 
 
+def inspect_touch_feedback(browser):
+    page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, device_scale_factor=3, reduced_motion='reduce')
+    page.goto(URL, wait_until='networkidle')
+    assert page.evaluate("matchMedia('(pointer: coarse)').matches")
+    assert page.locator('#enter-button').evaluate("el => getComputedStyle(el).webkitTapHighlightColor") == 'rgba(0, 0, 0, 0)'
+    page.locator('#enter-button').tap()
+    page.wait_for_function("document.getElementById('invitation').dataset.contentState === 'ready'")
+    assert page.locator('button, a, summary, label, input, textarea').evaluate_all("els => els.every(el => getComputedStyle(el).webkitTapHighlightColor === 'rgba(0, 0, 0, 0)')"), 'No native blue mobile tap overlays'
+    next_button = page.locator('#music-next')
+    next_button.scroll_into_view_if_needed()
+    rect = next_button.bounding_box()
+    touch = page.context.new_cdp_session(page)
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': rect['x'] + rect['width']/2, 'y': rect['y'] + rect['height']/2}]})
+    page.wait_for_function("document.getElementById('music-next').classList.contains('is-touch-pressed')")
+    page.wait_for_function("getComputedStyle(document.getElementById('music-next')).backgroundColor === 'rgba(197, 156, 104, 0.1)'")
+    page.locator('#music-player').screenshot(path=str(OUTPUT / 'mobile-warm-press.png'))
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+    page.wait_for_function("!document.getElementById('music-next').classList.contains('is-touch-pressed') && getComputedStyle(document.getElementById('music-next')).backgroundColor === 'rgba(0, 0, 0, 0)'")
+    assert next_button.evaluate("el => !el.matches(':focus-visible') && getComputedStyle(el).outlineStyle === 'none'")
+    position_before_cancel = page.locator('#music-position').inner_text()
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': rect['x'] + rect['width']/2, 'y': rect['y'] + rect['height']/2}]})
+    page.wait_for_function("document.getElementById('music-next').classList.contains('is-touch-pressed')")
+    touch.send('Input.dispatchTouchEvent', {'type': 'touchCancel', 'touchPoints': []})
+    page.wait_for_function("!document.querySelector('.is-touch-pressed')")
+    assert page.locator('#music-position').inner_text() == position_before_cancel, 'A cancelled swipe must not click the player or leave a pressed state'
+    page.get_by_role('radio', name='Sí, vamos a estar', exact=True).tap()
+    page.get_by_role('radio', name='2 personas', exact=True).tap()
+    assert page.get_by_role('radio', name='2 personas', exact=True).is_checked()
+    assert page.get_by_role('radio', name='2 personas', exact=True).evaluate("el => !el.matches(':focus-visible') && getComputedStyle(el.nextElementSibling).outlineStyle === 'none'")
+    page.locator('#transfer-open').tap()
+    assert page.locator('#transfer-dialog').evaluate('el => el.open')
+    page.locator('#transfer-close').tap()
+    assert page.locator('#transfer-dialog').is_hidden()
+    page.close()
+
+    keyboard = browser.new_page(viewport={'width': 390, 'height': 844}, reduced_motion='reduce')
+    keyboard.goto(URL, wait_until='networkidle')
+    keyboard.keyboard.press('Tab')
+    assert keyboard.evaluate("document.activeElement.id === 'enter-button' && document.activeElement.matches(':focus-visible')")
+    assert keyboard.locator('#enter-button').evaluate("el => {const s=getComputedStyle(el); return s.outlineStyle === 'solid' && s.outlineWidth === '2px' && s.outlineColor === 'rgb(229, 201, 149)';}")
+    keyboard.keyboard.press('Enter')
+    keyboard.wait_for_function("document.getElementById('invitation').dataset.contentState === 'ready'")
+    keyboard.keyboard.press('Tab')
+    assert keyboard.evaluate("document.activeElement.id === 'music-previous' && document.activeElement.matches(':focus-visible')")
+    assert keyboard.locator('#music-previous').evaluate("el => getComputedStyle(el).outlineColor") == 'rgb(229, 201, 149)'
+    keyboard.locator('#music-player').screenshot(path=str(OUTPUT / 'keyboard-gold-focus.png'))
+    keyboard.close()
+    return {'mobile_transparent_tap_warm_press_and_keyboard_gold_focus': True, 'passed': True}
+
+
+def inspect_gift_modal(browser):
+    for width, height in [(320, 568), (390, 844), (844, 390), (1440, 900)]:
+        mobile = width < 600
+        page = browser.new_page(viewport={'width': width, 'height': height}, is_mobile=mobile, has_touch=mobile, reduced_motion='reduce')
+        page.goto(URL, wait_until='networkidle')
+        page.locator('#enter-button').click()
+        page.wait_for_function("document.getElementById('invitation').dataset.contentState === 'ready'")
+        button = page.locator('#transfer-open')
+        button.scroll_into_view_if_needed()
+        gift_height = page.locator('.gifts-section').bounding_box()['height']
+        scroll_before = page.evaluate('scrollY')
+        button.click()
+        modal = page.locator('#transfer-dialog')
+        assert modal.evaluate("el => el.open && el.matches(':modal')")
+        assert page.evaluate("document.activeElement.id === 'transfer-close'")
+        assert page.evaluate("document.body.style.overflow === 'hidden'")
+        assert page.locator('.gifts-section').bounding_box()['height'] == gift_height, 'Do not expand the invitation beneath the modal'
+        rect = modal.bounding_box()
+        assert rect['x'] >= 15 and rect['y'] >= 19
+        assert rect['x'] + rect['width'] <= width - 15 and rect['y'] + rect['height'] <= height - 19
+        assert modal.evaluate("el => getComputedStyle(el).backdropFilter === 'blur(12px)' && getComputedStyle(el).opacity === '1'")
+        if width in [320, 390, 844]:
+            page.screenshot(path=str(OUTPUT / f'gift-modal-{width}x{height}.png'))
+        page.locator('#transfer-holder').click()
+        assert modal.evaluate('el => el.open'), 'Clicking content must not close the modal'
+        if not mobile:
+            page.mouse.move(rect['x'] + 18, rect['y'] + 18)
+            page.mouse.down()
+            page.mouse.move(4, 4)
+            page.mouse.up()
+            assert modal.evaluate('el => el.open'), 'Dragging from content to the backdrop is not a dismissal click'
+        for _ in range(8):
+            page.keyboard.press('Tab')
+            # The browser's own chrome may receive focus; underlying page controls may not.
+            assert page.evaluate("document.activeElement.closest('#transfer-dialog') !== null || (document.activeElement === document.body && !document.hasFocus())"), 'Native modal must not focus the underlying invitation'
+        page.keyboard.press('Escape')
+        assert modal.is_hidden()
+        page.wait_for_function("document.body.style.overflow !== 'hidden' && document.activeElement.id === 'transfer-open'")
+        assert abs(page.evaluate('scrollY') - scroll_before) < 2
+        button.click()
+        if mobile:
+            page.touchscreen.tap(4, 4)
+        else:
+            page.mouse.click(4, 4)
+        assert modal.is_hidden(), 'A click that starts on the backdrop closes the modal'
+        button.click()
+        page.locator('#transfer-close').click()
+        assert modal.is_hidden()
+        page.wait_for_function("document.body.style.overflow !== 'hidden'")
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.close()
+    return {'translucent_gift_modal_bounds_focus_escape_backdrop_and_scroll_restore': True, 'passed': True}
+
+
 def inspect_contact_and_castle(browser):
     page = browser.new_page(viewport={"width": 390, "height": 844})
     errors = []
@@ -350,18 +454,18 @@ def inspect_extra_sections(browser):
         page.evaluate('window.testNow += 1000')
         page.wait_for_function("document.querySelector('[data-countdown=seconds]').textContent === '59'")
         assert page.locator('[data-countdown]').all_text_contents() == ['00', '23', '59', '59']
-        assert page.locator('#transfer-details').is_visible()
+        assert page.locator('#transfer-open').is_visible()
         assert page.locator('#transfer-pending').is_hidden()
-        assert not page.locator('#transfer-details').evaluate('el => el.open')
-        page.locator('#transfer-details summary').click()
+        assert not page.locator('#transfer-dialog').evaluate('el => el.open')
+        page.locator('#transfer-open').click()
         assert page.locator('#transfer-fields input').count() == 4
         assert page.locator('#transfer-alias').input_value() == 'ALIAS A CONFIRMAR'
         assert page.locator('#transfer-accountNumber').input_value() == '0' * 22
         assert page.locator('#transfer-disclaimer').is_visible()
         assert page.get_by_role('button', name='Copiar Alias', exact=True).is_disabled()
         if zone == 'America/Argentina/Buenos_Aires':
-            page.locator('.gifts-section').screenshot(path=str(OUTPUT / 'gifts-illustrative-expanded.png'))
-        page.locator('#transfer-details summary').click()
+            page.screenshot(path=str(OUTPUT / 'gifts-translucent-modal.png'))
+        page.locator('#transfer-close').click()
         assert 'prueba' not in page.locator('.rsvp-card').inner_text().lower()
         assert 'prueba' not in page.locator('.wishes-section').inner_text().lower()
         assert page.locator('.countdown-section.detail-card, .gifts-section.detail-card, .wishes-section.detail-card').count() == 0
@@ -394,7 +498,7 @@ def inspect_extra_sections(browser):
           data.sections.bankTransfer = {holder: '<img src=x>', bank: 'Banco de prueba', alias: 'solo.prueba', accountNumber: '0000000000000000000000'};
           renderInvitation(data);
         }""")
-        page.locator('#transfer-details summary').click()
+        page.locator('#transfer-open').click()
         page.get_by_role('button', name='Copiar Alias', exact=True).click()
         assert page.evaluate('window.copied') == 'solo.prueba'
         assert page.locator('#transfer-status').inner_text() == 'Alias copiado.'
@@ -412,7 +516,8 @@ def inspect_extra_sections(browser):
         }""")
         assert page.locator('[data-countdown]').all_text_contents() == ['00', '00', '00', '00']
         assert page.locator('#countdown-heading').inner_text() == '¡Llegó el gran día!'
-        assert page.locator('#transfer-details').is_hidden()
+        assert page.locator('#transfer-open').is_hidden()
+        assert page.locator('#transfer-dialog').is_hidden()
         assert page.locator('#transfer-fields input').count() == 0
         assert not api_requests
         page.reload(wait_until='networkidle')
@@ -495,6 +600,8 @@ with sync_playwright() as playwright:
         results = [inspect_viewport(browser, width, height) for width, height in [(390, 844), (360, 640), (320, 568), (430, 932), (844, 390), (1440, 900)]]
         results.append(inspect_reduced_motion(browser))
         results.append(inspect_music(browser))
+        results.append(inspect_touch_feedback(browser))
+        results.append(inspect_gift_modal(browser))
         results.append(inspect_mock_form(browser))
         results.append(inspect_extra_sections(browser))
         results.append(inspect_contact_and_castle(browser))

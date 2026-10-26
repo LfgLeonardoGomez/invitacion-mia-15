@@ -54,16 +54,18 @@
   }
 
   function renderTransfer(transfer) {
-    const details = document.getElementById('transfer-details');
+    const button = document.getElementById('transfer-open');
+    const dialog = document.getElementById('transfer-dialog');
     const rows = document.getElementById('transfer-fields');
     const valid = transfer && ['alias', 'accountNumber'].some((key) => typeof transfer[key] === 'string' && transfer[key].trim());
-    details.hidden = !valid;
-    details.open = false;
+    button.hidden = !valid;
+    if (dialog.open) dialog.close();
     rows.replaceChildren();
     document.getElementById('transfer-pending').hidden = Boolean(valid);
     document.getElementById('transfer-status').textContent = '';
     const disclaimer = document.getElementById('transfer-disclaimer');
     disclaimer.hidden = !valid || !transfer.illustrative;
+    dialog.setAttribute('aria-describedby', valid && transfer.illustrative ? 'transfer-disclaimer' : 'transfer-dialog-note');
     if (!valid) return;
 
     for (const [key, label] of [['holder', 'Titular'], ['bank', 'Banco / billetera'], ['alias', 'Alias'], ['accountNumber', 'CBU / CVU']]) {
@@ -107,6 +109,37 @@
   function bind() {
     if (bound) return;
     bound = true;
+    const transferButton = document.getElementById('transfer-open');
+    const transferDialog = document.getElementById('transfer-dialog');
+    let previousOverflow;
+    let scrollLocked = false;
+    let startedOnBackdrop = false;
+    const outsideDialog = (event) => {
+      const rect = transferDialog.getBoundingClientRect();
+      return event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+    };
+    transferButton.addEventListener('click', () => {
+      if (transferButton.hidden || transferDialog.open) return;
+      transferDialog.showModal();
+      if (!scrollLocked) previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      scrollLocked = true;
+    });
+    document.getElementById('transfer-close').addEventListener('click', () => transferDialog.close());
+    transferDialog.addEventListener('pointerdown', (event) => {
+      startedOnBackdrop = event.target === transferDialog && outsideDialog(event);
+    }, { passive: true });
+    transferDialog.addEventListener('pointercancel', () => { startedOnBackdrop = false; }, { passive: true });
+    transferDialog.addEventListener('click', (event) => {
+      if (startedOnBackdrop && event.target === transferDialog && outsideDialog(event)) transferDialog.close();
+      startedOnBackdrop = false;
+    });
+    transferDialog.addEventListener('close', () => {
+      if (transferDialog.open) return;
+      if (scrollLocked) document.body.style.overflow = previousOverflow;
+      scrollLocked = false;
+      if (!transferButton.hidden) transferButton.focus({ preventScroll: true });
+    });
     const scene = document.getElementById('castle-scene');
     const invitation = document.getElementById('invitation');
     const activateCastle = (visible) => {
