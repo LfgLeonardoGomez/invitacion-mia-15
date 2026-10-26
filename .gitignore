@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+backend/data/
+
+# Local design references, not invitation assets for publication.
+/assets/*.mp4
+/assets/capturas video/
+/assets/adornos.png
