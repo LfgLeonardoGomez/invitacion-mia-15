@@ -16,8 +16,14 @@
     rsvp: null,
     sections: {
       eventUtcOffset: '-03:00',
-      // Completar con datos reales; no usar una cuenta ni un alias ficticio.
-      bankTransfer: null, // { holder, bank, alias, accountNumber }
+      // Solo para revisar el diseño: sustituir y retirar illustrative al tener datos reales.
+      bankTransfer: {
+        holder: 'Mia · XV años',
+        bank: 'Banco ilustrativo',
+        alias: 'ALIAS A CONFIRMAR',
+        accountNumber: '0000000000000000000000',
+        illustrative: true,
+      },
       contact: { whatsappNumber: '5491141675124' },
     },
     wish: null,

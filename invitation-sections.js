@@ -62,6 +62,8 @@
     rows.replaceChildren();
     document.getElementById('transfer-pending').hidden = Boolean(valid);
     document.getElementById('transfer-status').textContent = '';
+    const disclaimer = document.getElementById('transfer-disclaimer');
+    disclaimer.hidden = !valid || !transfer.illustrative;
     if (!valid) return;
 
     for (const [key, label] of [['holder', 'Titular'], ['bank', 'Banco / billetera'], ['alias', 'Alias'], ['accountNumber', 'CBU / CVU']]) {
@@ -82,6 +84,8 @@
         copy.className = 'transfer-copy';
         copy.textContent = 'Copiar';
         copy.setAttribute('aria-label', `Copiar ${label}`);
+        copy.disabled = Boolean(transfer.illustrative);
+        if (transfer.illustrative) copy.title = 'Disponible cuando se carguen los datos reales.';
         copy.addEventListener('click', async () => {
           const status = document.getElementById('transfer-status');
           try {
@@ -139,9 +143,7 @@
       try {
         const wish = await window.InvitationData.saveWish({ author: author.value, message: message.value });
         renderWish(wish);
-        status.textContent = window.InvitationData.mode === 'mock'
-          ? 'Tu deseo de prueba quedó en esta página. No se envió al servidor y se pierde al recargar.'
-          : '¡Gracias por tu deseo!';
+        status.textContent = '¡Gracias por tu deseo!';
       } catch (error) {
         status.textContent = error instanceof Error ? error.message : 'No pudimos guardar tu deseo. Intentá nuevamente.';
       } finally {
@@ -168,9 +170,7 @@
     contact.removeAttribute('href');
     if (contactLink) contact.href = contactLink;
     contact.setAttribute('aria-label', `Contactar a la mamá de ${payload.event.name} por WhatsApp`);
-    const mock = window.InvitationData.mode === 'mock';
-    document.getElementById('wish-notice').hidden = !mock;
-    document.getElementById('wish-submit').textContent = mock ? 'Guardar deseo de prueba' : 'Enviar mi deseo';
+    document.getElementById('wish-submit').textContent = 'Enviar mi deseo';
   }
 
   window.InvitationSections = Object.freeze({ countdown, whatsappLink, render });

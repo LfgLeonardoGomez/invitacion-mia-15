@@ -230,6 +230,12 @@ def inspect_music(browser):
     for selector in ['#music-previous', '#music-next']:
         rect = page.locator(selector).bounding_box()
         assert rect['width'] >= 44 and rect['height'] >= 44
+    assert page.locator('.music-transport button').evaluate_all('buttons => buttons.map(button => button.id)') == ['music-previous', 'music-toggle', 'music-next']
+    previous = page.locator('#music-previous').bounding_box()
+    play = page.locator('#music-toggle').bounding_box()
+    following = page.locator('#music-next').bounding_box()
+    assert 0 <= play['x'] - (previous['x'] + previous['width']) <= 2
+    assert 0 <= following['x'] - (play['x'] + play['width']) <= 2
     page.get_by_role('button', name='Canción siguiente', exact=True).click()
     page.wait_for_function("document.getElementById('background-music').src.includes('mia-my-one-and-only-love.mp3') && document.getElementById('background-music').currentTime > .1")
     assert page.locator('#music-track-title').inner_text() == 'My One And Only Love'
@@ -344,20 +350,31 @@ def inspect_extra_sections(browser):
         page.evaluate('window.testNow += 1000')
         page.wait_for_function("document.querySelector('[data-countdown=seconds]').textContent === '59'")
         assert page.locator('[data-countdown]').all_text_contents() == ['00', '23', '59', '59']
-        assert page.locator('#transfer-details').is_hidden()
-        assert page.locator('#transfer-pending').is_visible()
-        assert page.locator('#transfer-fields input').count() == 0, 'Never invent bank details'
+        assert page.locator('#transfer-details').is_visible()
+        assert page.locator('#transfer-pending').is_hidden()
+        assert not page.locator('#transfer-details').evaluate('el => el.open')
+        page.locator('#transfer-details summary').click()
+        assert page.locator('#transfer-fields input').count() == 4
+        assert page.locator('#transfer-alias').input_value() == 'ALIAS A CONFIRMAR'
+        assert page.locator('#transfer-accountNumber').input_value() == '0' * 22
+        assert page.locator('#transfer-disclaimer').is_visible()
+        assert page.get_by_role('button', name='Copiar Alias', exact=True).is_disabled()
+        if zone == 'America/Argentina/Buenos_Aires':
+            page.locator('.gifts-section').screenshot(path=str(OUTPUT / 'gifts-illustrative-expanded.png'))
+        page.locator('#transfer-details summary').click()
+        assert 'prueba' not in page.locator('.rsvp-card').inner_text().lower()
+        assert 'prueba' not in page.locator('.wishes-section').inner_text().lower()
         assert page.locator('.countdown-section.detail-card, .gifts-section.detail-card, .wishes-section.detail-card').count() == 0
 
         page.locator('#wish-author').fill('Ana')
         page.locator('#wish-message').fill('Que se cumplan todos tus sueños, Mia. ¡Te queremos!')
         page.locator('#wish-submit').click()
-        page.wait_for_function("document.getElementById('wish-status').textContent.includes('No se envió al servidor')")
+        page.wait_for_function("document.getElementById('wish-status').textContent.includes('Gracias por tu deseo')")
         assert page.locator('#wish-preview-author').inner_text() == 'Ana'
         if zone == 'America/Argentina/Buenos_Aires':
             page.screenshot(path=str(OUTPUT / 'extra-sections-full.png'), full_page=True)
             page.locator('.countdown-section').screenshot(path=str(OUTPUT / 'countdown.png'))
-            page.locator('.gifts-section').screenshot(path=str(OUTPUT / 'gifts-pending.png'))
+            page.locator('.gifts-section').screenshot(path=str(OUTPUT / 'gifts-collapsed.png'))
             page.locator('.wishes-section').screenshot(path=str(OUTPUT / 'wishes-preview.png'))
 
         page.locator('#wish-message').fill('<img src=x onerror=alert(1)>')
@@ -389,7 +406,9 @@ def inspect_extra_sections(browser):
         assert page.locator('#transfer-accountNumber').evaluate('input => input.selectionEnd - input.selectionStart') == 22
         page.evaluate("""async () => {
           window.testNow = Date.parse('2026-12-26T23:30:01Z');
-          renderInvitation(await InvitationData.load());
+          const data = await InvitationData.load();
+          data.sections.bankTransfer = null;
+          renderInvitation(data);
         }""")
         assert page.locator('[data-countdown]').all_text_contents() == ['00', '00', '00', '00']
         assert page.locator('#countdown-heading').inner_text() == '¡Llegó el gran día!'
@@ -423,7 +442,8 @@ def inspect_mock_form(browser):
     assert page.locator('#rsvp-submit').is_disabled()
     page.get_by_role('radio', name='3 personas', exact=True).check()
     page.locator("#rsvp-submit").click()
-    page.wait_for_function("document.getElementById('rsvp-status').textContent.includes('No se envió al servidor')")
+    page.wait_for_function("document.getElementById('rsvp-status').textContent.includes('Elegiste asistir con 3 personas')")
+    assert 'prueba' not in page.locator('.rsvp-card').inner_text().lower()
     page.screenshot(path=str(OUTPUT / 'rsvp-preview.png'))
     assert page.evaluate("InvitationData.load().then(data => data.rsvp.guestCount)") == 3
     assert page.get_by_role('radio', name='4 personas', exact=True).count() == 0

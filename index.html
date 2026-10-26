@@ -194,17 +194,18 @@
       .music-control {
         display: flex;
         align-items: center;
-        gap: 2px;
+        gap: 8px;
         width: 100%;
         min-height: 52px;
-        padding: 3px;
+        padding: 3px 8px;
         border: 1px solid rgba(197,156,104,.22);
         border-radius: 999px;
         color: var(--gold-light);
         background: rgba(16,9,31,.22);
         box-shadow: none;
       }
-      .music-control__main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; min-height: 44px; padding: 4px; border: 0; border-radius: 24px; color: inherit; background: transparent; cursor: pointer; }
+      .music-transport { display: flex; align-items: center; flex: none; gap: 0; }
+      .music-control__main { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; color: inherit; background: transparent; cursor: pointer; }
       .music-skip { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 10px; border: 0; border-radius: 50%; color: var(--gold-light); background: transparent; cursor: pointer; transition: transform 160ms var(--motion), background-color 160ms var(--motion); }
       .music-skip:active { transform: scale(.95); }
       .music-skip:disabled { opacity: .35; cursor: not-allowed; }
@@ -581,8 +582,8 @@
       .countdown-caption { margin: 0; color: var(--muted); font: 400 10px/1.7 var(--sans); }
       .section-illustration { display: block; width: 90px; height: 90px; margin: 0 auto 20px; color: var(--gold); }
       .gifts-section { margin-top: 20px; }
-      .transfer-details { margin-top: 24px; border-top: 1px solid rgba(197,156,104,.25); border-bottom: 1px solid rgba(197,156,104,.25); }
-      .transfer-details summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; gap: 12px; padding: 12px 8px; color: var(--gold-light); cursor: pointer; list-style: none; font: 500 10px/1.6 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+      .transfer-details { margin-top: 24px; }
+      .transfer-details summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; gap: 12px; padding: 12px 16px; border: 1px solid rgba(197,156,104,.4); border-radius: 16px 5px 16px 5px; background: rgba(60,35,119,.18); color: var(--gold-light); cursor: pointer; list-style: none; font: 500 10px/1.6 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
       .transfer-details summary::-webkit-details-marker { display: none; }
       .transfer-details summary::after { content: "+"; font: 400 23px/1 var(--serif); }
       .transfer-details[open] summary::after { content: "−"; }
@@ -591,6 +592,7 @@
       .transfer-field label { grid-column: 1 / -1; color: var(--gold); font: 500 10px/1.6 var(--sans); }
       .transfer-field input { width: 100%; min-width: 0; padding: 8px; color: var(--cream); background: rgba(17,9,30,.3); border: 1px solid rgba(197,156,104,.2); border-radius: 5px; font: 400 16px/1.5 var(--sans); }
       .transfer-copy { min-height: 44px; padding: 8px 12px; border: 1px solid rgba(197,156,104,.4); border-radius: 5px; color: var(--gold-light); background: rgba(60,35,119,.25); font: 500 11px/1.5 var(--sans); cursor: pointer; }
+      .transfer-copy:disabled { opacity: .4; cursor: not-allowed; }
       .transfer-pending { margin: 22px auto 0; max-width: 280px; color: rgba(200,187,207,.8); font: 400 italic 18px/1.5 var(--serif); }
       .wishes-section { margin-top: 48px; }
       .wish-form { margin-top: 24px; text-align: left; }
@@ -781,19 +783,21 @@
           <div class="hero-footer">
           <div class="music-player hero-enter" id="music-player" data-hero-enter="music" hidden>
             <div class="music-control" role="group" aria-label="Playlist de la invitación">
+              <span class="music-track">
+                <span class="music-track__title" id="music-track-title">Piano · apertura</span>
+                <span class="music-control__label"><span id="music-toggle-label">Reproducir</span><span id="music-position" aria-live="polite" aria-atomic="true">1 / 3</span></span>
+              </span>
+              <div class="music-transport" role="group" aria-label="Controles de música">
               <button class="music-skip" id="music-previous" type="button" aria-label="Canción anterior">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 5h2v14H5zm14 0v14L8 12z" /></svg>
               </button>
               <button class="music-control__main" id="music-toggle" type="button" aria-label="Reproducir música" aria-describedby="music-track-title music-position">
                 <span class="music-control__disc"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path id="music-toggle-icon" d="M8 5v14l11-7z" /></svg></span>
-                <span class="music-track">
-                  <span class="music-track__title" id="music-track-title">Piano · apertura</span>
-                  <span class="music-control__label"><span id="music-toggle-label">Reproducir</span><span id="music-position" aria-live="polite" aria-atomic="true">1 / 3</span></span>
-                </span>
               </button>
               <button class="music-skip" id="music-next" type="button" aria-label="Canción siguiente">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 5h2v14h-2zM5 5l11 7-11 7z" /></svg>
               </button>
+              </div>
             </div>
             <p class="music-feedback" id="music-status" role="status" hidden></p>
           </div>
@@ -876,9 +880,9 @@
             <legend>¿Cuántas personas asistirán?</legend>
             <div class="guest-count-choices" id="guest-count-choices"></div>
           </fieldset>
-          <button class="rsvp" id="rsvp-submit" type="submit" disabled>Guardar respuesta de prueba</button>
+          <button class="rsvp" id="rsvp-submit" type="submit" disabled>Confirmar asistencia</button>
           <p class="rsvp-result" id="rsvp-status" role="status" aria-live="polite"></p>
-          <p class="rsvp-note" id="mock-notice">Vista previa: esta respuesta no se envía al servidor.</p>
+          <p class="rsvp-note">Podés modificar tu selección.</p>
         </form>
       </section>
 
@@ -893,8 +897,9 @@
         <p class="section-copy">Lo más lindo es compartir esta noche con vos. Si además querés hacerme un regalo, podés hacerlo por transferencia.</p>
         <p class="transfer-pending" id="transfer-pending">Los datos para transferir se compartirán próximamente.</p>
         <details class="transfer-details" id="transfer-details" hidden>
-          <summary>Ver datos para transferir</summary>
+          <summary>Ver datos bancarios</summary>
           <div class="transfer-fields" id="transfer-fields"></div>
+          <p class="rsvp-note" id="transfer-disclaimer" hidden>Datos ilustrativos. No realizar transferencias.</p>
           <p class="rsvp-note">Revisá el titular y los datos antes de transferir.</p>
           <p class="rsvp-result" id="transfer-status" role="status" aria-live="polite"></p>
         </details>
@@ -915,12 +920,12 @@
           <label for="wish-message">Tu deseo</label>
           <textarea id="wish-message" name="message" rows="4" maxlength="600" required aria-describedby="wish-length wish-notice" placeholder="Que todos tus sueños…"></textarea>
           <span class="wish-length" id="wish-length">0 / 600</span>
-          <button class="action-frame" id="wish-submit" type="submit">Guardar deseo de prueba</button>
+          <button class="action-frame" id="wish-submit" type="submit">Enviar mi deseo</button>
           <p class="rsvp-result" id="wish-status" role="status" aria-live="polite"></p>
-          <p class="rsvp-note" id="wish-notice">Vista previa: tu deseo no se envía al servidor y se pierde al recargar.</p>
+          <p class="rsvp-note" id="wish-notice">Tu nombre aparecerá junto a tu mensaje.</p>
         </form>
         <figure class="wish-preview" id="wish-preview" hidden>
-          <p class="wish-preview__label">Así se ve tu deseo de prueba</p>
+          <p class="wish-preview__label">Tu deseo</p>
           <blockquote id="wish-preview-message"></blockquote>
           <figcaption id="wish-preview-author"></figcaption>
         </figure>
@@ -1059,15 +1064,14 @@
         map.searchParams.set('query', `${event.venueName}, ${event.venueAddress}`);
         document.getElementById('venue-map').href = map.href;
         const mock = window.InvitationData.mode === 'mock';
-        document.getElementById('mock-notice').hidden = !mock;
-        rsvpSubmit.textContent = mock ? 'Guardar respuesta de prueba' : 'Confirmar asistencia';
+        rsvpSubmit.textContent = 'Confirmar asistencia';
         rsvpForm.querySelectorAll('input[name="attendance"]').forEach((input) => { input.checked = false; });
         rsvpStatus.textContent = '';
         if (payload.rsvp) {
           rsvpForm.querySelector(`input[value="${payload.rsvp.attending ? 'yes' : 'no'}"]`).checked = true;
           const restoredCount = [...guestCountChoices.querySelectorAll('input')].find((input) => Number(input.value) === payload.rsvp.guestCount);
           if (payload.rsvp.attending && restoredCount) restoredCount.checked = true;
-          rsvpStatus.textContent = mock ? 'Última respuesta de prueba cargada para esta sesión.' : 'Ya tenemos una respuesta de esta invitación. Podés actualizarla.';
+          rsvpStatus.textContent = mock ? 'Podés actualizar tu selección.' : 'Ya tenemos una respuesta de esta invitación. Podés actualizarla.';
         }
         updateAttendanceFields();
         window.InvitationSections.render(payload);
@@ -1116,7 +1120,7 @@
           });
           invitationPayload.rsvp = response;
           rsvpStatus.textContent = window.InvitationData.mode === 'mock'
-            ? `Prueba guardada solo en esta sesión: ${response.attending ? `asistirían ${response.guestCount} ${response.guestCount === 1 ? 'persona' : 'personas'}` : 'no asistirían'}. No se envió al servidor.`
+            ? `Elegiste ${response.attending ? `asistir con ${response.guestCount} ${response.guestCount === 1 ? 'persona' : 'personas'}` : 'no asistir'}. ¡Gracias!`
             : 'Tu respuesta quedó guardada. ¡Gracias!';
         } catch (error) {
           rsvpStatus.textContent = error instanceof Error ? error.message : 'No pudimos guardar la respuesta. Intentá nuevamente.';

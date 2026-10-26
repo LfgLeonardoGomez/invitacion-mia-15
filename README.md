@@ -2,7 +2,7 @@
 
 Prototipo visual móvil de una invitación de quince años. La portada, música, fondo y revelado por scroll siguen siendo independientes del backend.
 
-Repositorio: [LfgLeonardoGomez/invitacion-mia-15-anios](https://github.com/LfgLeonardoGomez/invitacion-mia-15-anios), rama principal `main`. El repositorio contiene el código; una URL pública de vista previa requiere configurar hosting por separado, publicando únicamente el frontend y sus recursos.
+Repositorio: [LfgLeonardoGomez/invitacion-mia-15-anios](https://github.com/LfgLeonardoGomez/invitacion-mia-15-anios), rama principal `main`. Vista previa en [GitHub Pages](https://lfgleonardogomez.github.io/invitacion-mia-15-anios/), disponible cuando finalice correctamente el workflow `Publicar invitación`.
 
 ## Vista previa y datos
 
@@ -11,9 +11,9 @@ Abrir `index.html` en el navegador. Los datos se editan por ahora en `invitation
 - Los datos del evento son los confirmados para Mia.
 - **Familia Gomez / 3 lugares es el ejemplo de vista previa** solicitado, no una invitación real cargada en el backend. El saludo dice «En mi noche especial…» y «Reservamos 3 lugares para compartir este momento juntos».
 - Asistentes se eligen con botones de selección única generados de **1 al cupo** recibido. Son radios nativos accesibles con teclado; no hay cantidad libre ni selección automática. El servidor sigue siendo quien valida el cupo real.
-- El formulario guarda solamente una respuesta de prueba en memoria de esa página; al recargar se pierde. El texto indica expresamente que **no se envió al servidor**.
+- **Los formularios siguen siendo locales:** guardan la selección/deseo únicamente en memoria de esa página; al recargar se pierden y **no se envían al organizador ni al backend**. Por pedido del usuario, los botones y mensajes ya no llevan rótulos «de prueba»: «Confirmar asistencia» y «Enviar mi deseo». Los agradecimientos no afirman entrega al servidor. Es una revisión visual, no un sistema de confirmaciones listo para invitados reales.
 - Cuenta regresiva hasta la recepción: **26/12/2026 20:30, UTC−03:00**, independiente de la zona horaria del invitado. Se detiene en cero y muestra «¡Llegó el gran día!».
-- Regalos/transferencias: `sections.bankTransfer` queda en `null` hasta recibir los datos reales. Al completarlo con `holder`, `bank`, `alias` y/o `accountNumber`, se habilita el desplegable y copiar alias/CBU/CVU. Si falla el portapapeles, permite copiar manualmente. No realiza pagos ni guarda información bancaria del invitado.
+- Regalos/transferencias: desplegable con datos **ilustrativos**, alias «ALIAS A CONFIRMAR» y22ceros en CBU/CVU; `illustrative: true` muestra «No realizar transferencias» y deshabilita copiar. Reemplazar todos los valores por datos verificados y quitar ese flag al usar una cuenta real. Con `bankTransfer: null` vuelve el estado pendiente. No realiza pagos ni guarda información bancaria del invitado.
 - Deseos: formulario de nombre (80 caracteres) y mensaje (600), con vista previa de texto segura. Se conserva solo el último deseo **de prueba en memoria**, sin muro público, envío ni persistencia real.
 - `invitation-sections.js` maneja contador, datos de regalo y formulario de deseos sin modificar la intro aprobada ni realizar peticiones HTTP.
 - Contacto: `sections.contact.whatsappNumber` configura el número internacional de la mamá, solo dígitos. Se usa un [enlace directo oficial de WhatsApp](https://faq.whatsapp.com/5913398998672934) con mensaje genérico, sin datos familiares ni token de invitación. El chat se abre al tocar el enlace; no se envía un mensaje automáticamente.
@@ -30,11 +30,19 @@ Playlist local de tres canciones en `music-playlist.js`, en este orden:
 2. [My One And Only Love](https://www.youtube.com/watch?v=lcoqOPaBe9M): ~3:02.
 3. [UNDERSTAND](https://www.youtube.com/watch?v=6DcUnqZqTvI): ~2:30.
 
-El reproductor queda **al pie del hero**, separado de la identidad principal y sin disco dorado lleno/glow protagonista. Conserva objetivos táctiles de44px, título, posición y anterior/play-pausa/siguiente. Está en flujo normal, no fijo ni superpuesto: en pantallas bajas el hero crece para evitar solapamientos.
+El reproductor queda **al pie del hero**, separado de la identidad principal y sin disco dorado lleno/glow protagonista. Título/posición quedan a un lado y los tres controles juntos en el orden **atrás · play/pausa · adelante**, cada uno con objetivo táctil44px. Está en flujo normal, no fijo ni superpuesto: en pantallas bajas el hero crece para evitar solapamientos.
 
 `music-player.js` usa un único `<audio preload="none">`: no reproduce ni descarga música antes de tocar Ingresar; carga solo la pista seleccionada. Al terminar avanza, y la tercera vuelve a la primera. Anterior/siguiente conservan la pausa si la música estaba pausada. Los cambios rápidos cancelan fades anteriores e ignoran promesas obsoletas. Si falla una canción, muestra error y permite reintentar o elegir otra sin saltos automáticos infinitos.
 
 Las pistas nuevas son MP3 a192kb/s y se ajustaron en dos pasadas a−17LUFS, tomando como referencia el piano original, con pico objetivo−1,5dBTP. El piano no fue modificado. La lista completa suma casi diez minutos/~14,3MB, pero no se precargan las tres pistas juntas. Los enlaces de origen no incluyen playlist/radio.
+
+## Publicación sin build
+
+En Settings → Pages, Source debe ser **GitHub Actions**. `.github/workflows/pages.yml` publica al pushear `main` o al ejecutarlo manualmente desde Actions. Solo corre sobre `main`, con permisos de lectura del código y escritura de Pages/OIDC; las acciones oficiales están fijadas a SHAs verificados.
+
+`scripts/prepare_pages.py` copia una allowlist de10archivos (HTML, cuatro JS, dos imágenes y tres MP3) más `.nojekyll` a un directorio temporal nuevo. No compila, instala dependencias ni sirve el repositorio completo. **Backend, tests, docs, referencias, secretos y bases de datos no forman parte del artefacto web.** Las pruebas del empaquetado fallan si falta un recurso, si sale del proyecto o si se intenta reutilizar un destino existente; nunca eliminan contenido.
+
+Antes de compartir, comprobar en Actions que el despliegue terminó correctamente, abrir la URL y probar música, botones y formularios. Para volver a una versión anterior: revertir el commit del cambio con `git revert <sha>` y pushear a `main`; el mismo workflow republica esa versión. Esto no despliega ni conecta la API.
 
 ## Backend
 
@@ -45,6 +53,7 @@ Ver `backend/README.md` y `backend/SECURITY.md` para API, configuración y lími
 ```powershell
 node --test tests/test_invitation_data.cjs tests/test_music_player.cjs
 python tests/check_intro.py
+python -m unittest discover -s tests -p test_prepare_pages.py
 python -m pytest backend/tests
 ```
 

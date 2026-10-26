@@ -39,13 +39,15 @@ test('preview accepts only valid counts and has no server persistence', async ()
   assert.equal((await data.load()).rsvp.guestCount, 0);
 });
 
-test('bank details remain pending and mock sections are cloned', async () => {
+test('bank illustration stays non-operational and mock sections are cloned', async () => {
   const data = adapter();
   const payload = await data.load();
-  assert.equal(payload.sections.bankTransfer, null);
+  assert.equal(payload.sections.bankTransfer.illustrative, true);
+  assert.equal(payload.sections.bankTransfer.alias, 'ALIAS A CONFIRMAR');
+  assert.equal(payload.sections.bankTransfer.accountNumber, '0'.repeat(22));
   assert.equal(payload.sections.eventUtcOffset, '-03:00');
   payload.sections.bankTransfer = { alias: 'should-not-persist' };
-  assert.equal((await data.load()).sections.bankTransfer, null);
+  assert.equal((await data.load()).sections.bankTransfer.alias, 'ALIAS A CONFIRMAR');
 });
 
 test('wish preview validates, trims, clones and resets on reload', async () => {
