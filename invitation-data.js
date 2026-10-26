@@ -9,7 +9,7 @@
       entranceTime: '21:30',
       venueName: 'Jardín Secreto',
       venueAddress: 'Teodoro Fels 7423, Trujui',
-      dressCode: 'Elegante sport',
+      dressCode: 'Elegante Sport',
     },
     // Datos de una familia ficticia para diseñar los estados de la invitación.
     invitation: { id: 'preview-family', familyName: 'Familia Gomez', seats: 3 },

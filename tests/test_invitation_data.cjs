@@ -16,6 +16,7 @@ test('mock preserves the API payload and returns independent data', async () => 
   assert.equal(data.mode, 'mock');
   assert.equal(original.event.name, 'Mia');
   assert.equal(original.event.date, '2026-12-26');
+  assert.equal(original.event.dressCode, 'Elegante Sport');
   assert.equal(original.invitation.seats, 3);
   assert.equal(original.invitation.familyName, 'Familia Gomez');
   original.invitation.seats = 999;

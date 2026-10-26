@@ -797,7 +797,7 @@
           <p class="eyebrow hero-enter" data-hero-enter="subtitle">Mis XV años</p>
           <div class="hero-enter" data-hero-enter="details">
             <div class="small-rule" aria-hidden="true"><span></span></div>
-            <p class="date-line"><time id="event-date" datetime="2026-12-26" aria-label="26 de diciembre de 2026"><span data-date-part="day">26</span> <span class="date-separator" aria-hidden="true">·</span> <span data-date-part="month">diciembre</span> <span class="date-separator" aria-hidden="true">·</span> <span data-date-part="year">2026</span></time></p>
+            <p class="date-line"><time id="event-date" datetime="2026-12-26" aria-label="26 de diciembre de 2026"><span data-date-part="day">26</span> <span class="date-separator" aria-hidden="true">·</span> <span data-date-part="month">Diciembre</span> <span class="date-separator" aria-hidden="true">·</span> <span data-date-part="year">2026</span></time></p>
           </div>
           </div>
           <div class="hero-footer">
@@ -880,7 +880,7 @@
           <path d="m77 11 10 5 10-5 8 16-6 9-3-7 1 43H77l1-43-3 7-6-9 8-16Zm0 0 10 23 10-23M87 34v38M81 38h-3m17 0h-3M86 46h2M86 54h2" />
         </svg>
         <h2 class="detail-card__title" id="dress-title">Código de vestimenta</h2>
-        <p class="dress-section__value" data-event="dressCode">Elegante sport</p>
+        <p class="dress-section__value" data-event="dressCode">Elegante Sport</p>
       </section>
 
       <section class="detail-card rsvp-card reveal-item" aria-labelledby="rsvp-title">
@@ -948,10 +948,10 @@
       <section class="contact-section reveal-item" id="contact-section" aria-labelledby="contact-title" hidden>
         <p class="eyebrow">Estamos para ayudarte</p>
         <h2 class="section-heading" id="contact-title">¿Tenés alguna consulta?</h2>
-        <p class="section-copy">Podés escribirle a mi mamá por WhatsApp.</p>
+        <p class="section-copy">Comunicate con mi mamá</p>
         <a class="action-frame" id="contact-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Contactar a la mamá de Mia por WhatsApp">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M21 11.5a9 9 0 0 1-13.5 7.8L3 21l1.6-4.6A9 9 0 1 1 21 11.5Z" /><path d="M8 7c-1 1 0 4 2 6s5 3 6 2l1-2-3-1-1 1c-1.5-.5-2.5-1.5-3-3l1-1-1-3-2 1Z" /></svg>
-          <span>Escribir por WhatsApp</span>
+          <span>Escribir por Whatsapp</span>
         </a>
       </section>
 
@@ -1083,7 +1083,7 @@
         const monthName = new Intl.DateTimeFormat('es-AR', { month: 'long', timeZone: 'UTC' }).format(calendarDate);
         const fullDate = `${day} de ${monthName} de ${year}`;
         document.querySelector('[data-date-part="day"]').textContent = day;
-        document.querySelector('[data-date-part="month"]').textContent = monthName;
+        document.querySelector('[data-date-part="month"]').textContent = monthName.charAt(0).toLocaleUpperCase('es-AR') + monthName.slice(1);
         document.querySelector('[data-date-part="year"]').textContent = year;
         document.getElementById('event-date').dateTime = event.date;
         document.getElementById('event-date').setAttribute('aria-label', fullDate);

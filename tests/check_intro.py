@@ -79,7 +79,10 @@ def inspect_viewport(browser, width, height):
     assert page.locator("#music-toggle").is_visible()
     assert page.locator(".invite-shell").count() == 0
     assert page.locator(".invite-hero").evaluate("el => { const s = getComputedStyle(el); return s.borderTopWidth === '0px' && s.backgroundColor === 'rgba(0, 0, 0, 0)' && s.boxShadow === 'none'; }")
-    assert page.locator(".date-line").inner_text() == "26 · diciembre · 2026"
+    assert page.locator(".date-line").inner_text() == "26 · Diciembre · 2026"
+    assert page.locator('[data-event="dressCode"]').inner_text() == 'Elegante Sport'
+    assert page.locator('#contact-section .section-copy').inner_text() == 'Comunicate con mi mamá'
+    assert page.locator('#contact-whatsapp span').inner_text() == 'Escribir por Whatsapp'
     assert page.locator(".date-separator").count() == 2
     assert page.locator(".date-line").evaluate("el => getComputedStyle(el).fontWeight") == '400'
     assert page.locator(".eyebrow, .date-line").evaluate_all("elements => elements.every(el => getComputedStyle(el).color.endsWith('0.72)'))")
