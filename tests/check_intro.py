@@ -82,7 +82,7 @@ def inspect_viewport(browser, width, height):
     assert page.locator(".date-line").inner_text() == "26 · Diciembre · 2026"
     assert page.locator('[data-event="dressCode"]').inner_text() == 'Elegante Sport'
     assert page.locator('#contact-section .section-copy').inner_text() == 'Comunicate con mi mamá'
-    assert page.locator('#contact-whatsapp span').inner_text() == 'Escribir por Whatsapp'
+    assert page.locator('#contact-whatsapp span').text_content() == 'Escribir por Whatsapp'
     assert page.locator(".date-separator").count() == 2
     assert page.locator(".date-line").evaluate("el => getComputedStyle(el).fontWeight") == '400'
     assert page.locator(".eyebrow, .date-line").evaluate_all("elements => elements.every(el => getComputedStyle(el).color.endsWith('0.72)'))")
@@ -478,16 +478,21 @@ def inspect_extra_sections(browser):
         page.locator('#wish-submit').click()
         page.wait_for_function("document.getElementById('wish-status').textContent.includes('Gracias por tu deseo')")
         assert page.locator('#wish-preview-author').inner_text() == 'Ana'
+        assert page.locator('#wish-author').input_value() == ''
+        assert page.locator('#wish-message').input_value() == ''
+        assert page.locator('#wish-length').inner_text() == '0 / 600'
         if zone == 'America/Argentina/Buenos_Aires':
             page.screenshot(path=str(OUTPUT / 'extra-sections-full.png'), full_page=True)
             page.locator('.countdown-section').screenshot(path=str(OUTPUT / 'countdown.png'))
             page.locator('.gifts-section').screenshot(path=str(OUTPUT / 'gifts-collapsed.png'))
             page.locator('.wishes-section').screenshot(path=str(OUTPUT / 'wishes-preview.png'))
 
+        page.locator('#wish-author').fill('Ana')
         page.locator('#wish-message').fill('<img src=x onerror=alert(1)>')
         page.locator('#wish-submit').click()
         page.wait_for_function("document.getElementById('wish-preview-message').textContent.startsWith('<img')")
         assert page.locator('#wish-preview img').count() == 0
+        page.locator('#wish-author').fill('Ana')
         page.locator('#wish-message').fill('   ')
         page.locator('#wish-submit').click()
         assert not page.locator('#wish-message').evaluate('input => input.checkValidity()')

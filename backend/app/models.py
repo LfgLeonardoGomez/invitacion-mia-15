@@ -2,6 +2,7 @@
 
 from datetime import date as calendar_date
 from typing import Annotated, Self
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 from pydantic.alias_generators import to_camel
@@ -51,7 +52,7 @@ DEFAULT_EVENT = EventData(
     entrance_time="21:30",
     venue_name="Jardín Secreto",
     venue_address="Teodoro Fels 7423, Trujui",
-    dress_code="Elegante sport",
+    dress_code="Elegante Sport",
 )
 
 
@@ -97,10 +98,88 @@ class InvitationData(ApiModel):
     seats: int
 
 
+class ContactData(ApiModel):
+    whatsapp_number: Annotated[StrictStr, Field(pattern=r"^(?:[1-9][0-9]{7,14})?$")]
+
+
+class BankTransferData(ApiModel):
+    holder: Annotated[StrictStr, Field(min_length=1, max_length=120)]
+    bank: Annotated[StrictStr, Field(min_length=1, max_length=100)]
+    alias: Annotated[StrictStr, Field(max_length=100)] = ""
+    account_number: Annotated[StrictStr, Field(pattern=r"^(?:[0-9]{22})?$")] = ""
+    illustrative: StrictBool
+
+    @model_validator(mode="after")
+    def requires_destination(self) -> Self:
+        if not self.alias and not self.account_number:
+            raise ValueError("An alias or accountNumber is required.")
+        return self
+
+
+class SectionsData(ApiModel):
+    event_utc_offset: Annotated[StrictStr, Field(pattern=r"^-03:00$")]
+    contact: ContactData
+    bank_transfer: BankTransferData | None
+
+
+DEFAULT_SECTIONS = SectionsData(
+    event_utc_offset="-03:00",
+    contact=ContactData(whatsapp_number="5491141675124"),
+    bank_transfer=BankTransferData(
+        holder="Mia · XV años", bank="Banco ilustrativo", alias="ALIAS A CONFIRMAR",
+        account_number="0000000000000000000000", illustrative=True,
+    ),
+)
+
+
+class WishInput(ApiModel):
+    author: Annotated[StrictStr, Field(min_length=1, max_length=80)]
+    message: Annotated[StrictStr, Field(min_length=1, max_length=600)]
+    client_request_id: Annotated[StrictStr, Field(min_length=36, max_length=36)]
+
+    @field_validator("author", "message")
+    @classmethod
+    def disallow_null_character(cls, value: str) -> str:
+        if "\x00" in value:
+            raise ValueError("Null characters are not allowed.")
+        return value
+
+    @field_validator("client_request_id")
+    @classmethod
+    def canonical_request_id(cls, value: str) -> str:
+        return str(UUID(value))
+
+
+class WishData(ApiModel):
+    id: str
+    author: str
+    message: str
+    created_at: str
+    updated_at: str
+
+
+class AdminWish(WishData):
+    invitation_id: str
+    family_name: str
+
+
+class AdminSummary(ApiModel):
+    total_invitations: int
+    active_invitations: int
+    confirmed_invitations: int
+    declined_invitations: int
+    pending_invitations: int
+    confirmed_guests: int
+    reserved_seats: int
+    total_wishes: int
+
+
 class InvitationResponse(ApiModel):
     event: EventData
     invitation: InvitationData
     rsvp: RsvpData | None
+    sections: SectionsData
+    wish: WishData | None
 
 
 class AdminInvitation(InvitationData):

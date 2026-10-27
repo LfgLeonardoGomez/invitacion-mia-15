@@ -9,6 +9,7 @@ import pytest
 from backend.app.config import Settings
 from backend.app.main import create_app
 from backend.app.models import DEFAULT_EVENT
+from backend.tests.keys import TEST_LINK_KEY
 
 
 ADMIN_KEY = "test-only-secret-not-for-deployment-0123456789"
@@ -17,7 +18,7 @@ AUTH = {"Authorization": f"Bearer {ADMIN_KEY}"}
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(database_path=tmp_path / "private" / "invitations.sqlite3", admin_api_key=ADMIN_KEY)
+    return Settings(database_path=tmp_path / "private" / "invitations.sqlite3", admin_api_key=ADMIN_KEY, link_encryption_key=TEST_LINK_KEY)
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ def test_public_contract_and_token_never_persisted_in_clear(client, settings):
     public = client.get(f"/api/invitations/{family['token']}")
     assert public.status_code == 200
     data = public.json()
-    assert set(data) == {"event", "invitation", "rsvp"}
+    assert set(data) == {"event", "invitation", "rsvp", "sections", "wish"}
     assert data["event"] == DEFAULT_EVENT.model_dump(by_alias=True)
     assert data["invitation"] == {"id": family["id"], "familyName": "Familia uno", "seats": 4}
     assert data["rsvp"] is None
@@ -250,11 +251,11 @@ def test_native_telemetry_is_explicitly_disabled(settings, monkeypatch):
             assert app._telemetry[signal] is False
 
 
-def test_explicit_cors_and_disabled_credentials(tmp_path):
+def test_explicit_cors_and_credentials_for_private_sessions(tmp_path):
     settings = Settings(database_path=tmp_path / "cors.sqlite3", admin_api_key=ADMIN_KEY, allowed_origins=("https://invite.example",))
     with TestClient(create_app(settings)) as client:
         allowed = client.get("/api/health", headers={"Origin": "https://invite.example"})
         assert allowed.headers["access-control-allow-origin"] == "https://invite.example"
-        assert "access-control-allow-credentials" not in allowed.headers
+        assert allowed.headers["access-control-allow-credentials"] == "true"
         blocked = client.get("/api/health", headers={"Origin": "https://evil.example"})
         assert "access-control-allow-origin" not in blocked.headers

@@ -699,6 +699,27 @@
       .contact-section { width: min(100%, 360px); margin: 50px auto; padding: 16px 12px; text-align: center; }
       .contact-section .section-heading { font-size: 29px; }
       .contact-section .action-frame { margin-top: 23px; }
+      .invitation-load-status { position: fixed; z-index: 80; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 32px), 390px); padding: 16px 20px; border: 1px solid rgba(197,156,104,.4); border-radius: 18px; background: rgba(23,15,46,.92); color: var(--cream); box-shadow: 0 12px 40px rgba(0,0,0,.3); text-align: center; font: 400 12px/1.7 var(--sans); }
+      .invitation-load-status p { margin: 0; }
+      .invitation-load-status button { margin-top: 12px; min-height: 44px; padding: 8px 22px; border: 1px solid rgba(197,156,104,.5); border-radius: 22px; background: transparent; color: var(--gold-light); font: inherit; cursor: pointer; }
+      .invitation-load-status button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 4px; }
+      .rsvp-result[data-result]:not(:empty) { padding: 13px 15px; border: 1px solid rgba(197,156,104,.38); border-radius: 14px; background: rgba(60,35,119,.18); color: var(--cream); font-size: 12px; line-height: 1.7; }
+      .rsvp-result[data-result="success"]:not(:empty)::before { content: "✓ "; color: var(--gold-light); }
+      .rsvp-result[data-result="error"] { color: #ffe4d6; border-color: rgba(230,165,136,.5); background: rgba(96,43,53,.28); }
+      .rsvp-result[data-result="error"]:not(:empty)::before { content: "! "; font-weight: 600; }
+      .form-feedback { position: fixed; z-index: 90; left: 50%; bottom: max(38px, calc(env(safe-area-inset-bottom) + 24px)); width: min(calc(100% - 40px), 350px); transform: translateX(-50%); pointer-events: none; }
+      .form-feedback[hidden] { display: none; }
+      .form-feedback__flight { display: grid; justify-items: center; }
+      .form-feedback__lantern { width: 68px; height: 98px; margin-bottom: 9px; overflow: visible; filter: drop-shadow(0 0 14px rgba(255,187,95,.56)) drop-shadow(0 0 35px rgba(244,168,68,.24)); }
+      .form-feedback__card { position: relative; width: 100%; padding: 20px 24px 21px; border: 1px solid rgba(225,188,129,.58); border-radius: 22px 22px 13px 13px; background: linear-gradient(150deg, rgba(54,30,77,.95), rgba(23,15,46,.96)); box-shadow: 0 12px 42px rgba(8,4,16,.48), inset 0 1px rgba(255,238,204,.1); text-align: center; }
+      .form-feedback__card::before { content: "✓"; display: block; margin-bottom: 7px; color: var(--gold-light); font: 400 19px/1 var(--sans); }
+      .form-feedback__message { margin: 0; color: #fff2dd; font: 400 22px/1.25 var(--serif); text-wrap: balance; }
+      .form-feedback[data-kind="error"] .form-feedback__lantern, .form-feedback[data-kind="preview"] .form-feedback__lantern { display: none; }
+      .form-feedback[data-kind="error"] .form-feedback__card { border-color: rgba(230,165,136,.65); }
+      .form-feedback[data-kind="error"] .form-feedback__card::before { content: "!"; color: #ffe4d6; }
+      .form-feedback[data-kind="preview"] .form-feedback__card::before { content: "✧"; }
+      .feedback-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      @media (max-height: 440px) { .form-feedback { bottom: 18px; } .form-feedback__lantern { width: 46px; height: 65px; } .form-feedback__card { padding: 14px 20px; } .form-feedback__message { font-size: 20px; } }
       .castle-scene {
         --castle-width: min(92vw, 380px, max(140px, calc((100svh - 180px) * 425 / 480)));
         --castle-height: calc(var(--castle-width) * 480 / 425);
@@ -758,7 +779,7 @@
       <div class="entrance__shade" aria-hidden="true"></div>
 
       <div class="entrance__footer">
-        <button class="enter-frame" id="enter-button" type="button" aria-label="Ingresar a la invitación de Mia">
+        <button class="enter-frame" id="enter-button" type="button" aria-label="Ingresar a la invitación de Mia" disabled>
           <svg class="enter-ornament" viewBox="0 0 260 44" fill="none" aria-hidden="true" focusable="false">
             <g id="entry-flourish" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round">
               <path d="M8 30c24 13 43 5 63-8 20-14 36-13 59 3 23-16 39-17 59-3 20 13 39 21 63 8" />
@@ -773,6 +794,11 @@
         </button>
       </div>
     </section>
+
+    <aside class="invitation-load-status" id="invitation-load-status" role="status" aria-live="polite" hidden>
+      <p id="invitation-load-message"></p>
+      <button id="invitation-load-retry" type="button" hidden>Volver a intentar</button>
+    </aside>
 
     <main class="invitation" id="invitation" hidden tabindex="-1" aria-label="Invitación de los quince años de Mia">
       <div class="invitation__ambient" aria-hidden="true">
@@ -901,8 +927,8 @@
             <div class="guest-count-choices" id="guest-count-choices"></div>
           </fieldset>
           <button class="rsvp" id="rsvp-submit" type="submit" disabled>Confirmar asistencia</button>
-          <p class="rsvp-result" id="rsvp-status" role="status" aria-live="polite"></p>
-          <p class="rsvp-note">Podés modificar tu selección.</p>
+          <p class="rsvp-result" id="rsvp-status" aria-live="off"></p>
+          <p class="rsvp-note" id="rsvp-notice">Podés modificar tu selección.</p>
         </form>
       </section>
 
@@ -935,7 +961,7 @@
           <textarea id="wish-message" name="message" rows="4" maxlength="600" required aria-describedby="wish-length wish-notice" placeholder="Que todos tus sueños…"></textarea>
           <span class="wish-length" id="wish-length">0 / 600</span>
           <button class="action-frame" id="wish-submit" type="submit">Enviar mi deseo</button>
-          <p class="rsvp-result" id="wish-status" role="status" aria-live="polite"></p>
+          <p class="rsvp-result" id="wish-status" aria-live="off"></p>
           <p class="rsvp-note" id="wish-notice">Tu nombre aparecerá junto a tu mensaje.</p>
         </form>
         <figure class="wish-preview" id="wish-preview" hidden>
@@ -1005,9 +1031,25 @@
       <p class="rsvp-note" id="transfer-dialog-note">Revisá el titular y los datos antes de transferir.</p>
       <p class="rsvp-result" id="transfer-status" role="status" aria-live="polite"></p>
     </dialog>
+    <div class="form-feedback" id="form-feedback" aria-hidden="true" hidden>
+      <div class="form-feedback__flight">
+        <svg class="form-feedback__lantern" viewBox="0 0 68 98" fill="none" aria-hidden="true" focusable="false">
+          <defs><linearGradient id="feedback-paper" x1="10" y1="10" x2="58" y2="72" gradientUnits="userSpaceOnUse"><stop stop-color="#F4CB83"/><stop offset=".4" stop-color="#FFE7A7"/><stop offset="1" stop-color="#D58D3C"/></linearGradient><radialGradient id="feedback-flame"><stop stop-color="#FFFADE"/><stop offset=".42" stop-color="#FFD381"/><stop offset="1" stop-color="#F1A547" stop-opacity="0"/></radialGradient></defs>
+          <path d="M10 12Q34 3 58 12L55 72Q34 81 13 72Z" fill="url(#feedback-paper)" stroke="#F8DFAB" stroke-opacity=".8" stroke-width=".8"/>
+          <path d="M10 12Q34 20 58 12M13 72Q34 64 55 72M24 14 25 73M44 14 43 73" stroke="#B97A37" stroke-opacity=".4" stroke-width=".7"/>
+          <ellipse cx="34" cy="67" rx="22" ry="21" fill="url(#feedback-flame)"/>
+          <path d="M34 59c-5 6-5 11 0 13 5-2 5-7 0-13Z" fill="#FFF5C6"/>
+          <path d="M14 74 27 89h14l13-15M27 89h14" stroke="#D4A363" stroke-width=".8" stroke-linecap="round"/>
+          <path d="m34 31 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#C48947" fill-opacity=".58"/>
+        </svg>
+        <div class="form-feedback__card"><p class="form-feedback__message" id="form-feedback-message"></p></div>
+      </div>
+    </div>
+    <p class="feedback-announcement" id="feedback-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
     <audio id="background-music" preload="none"></audio>
-    <script src="./invitation-data.js"></script>
-    <script src="./invitation-sections.js?v=gift-modal-1"></script>
+    <script src="./app-config.js"></script>
+    <script src="./invitation-data.js?v=wish-limit-10"></script>
+    <script src="./invitation-sections.js?v=wish-limit-10"></script>
     <script src="./music-playlist.js"></script>
     <script src="./music-player.js"></script>
     <script>
@@ -1058,6 +1100,7 @@
       const cameraEasing = 'cubic-bezier(.35,0,.65,.9)';
       let isEntering = false;
       let invitationPayload;
+      let isSavingRsvp = false;
       const rsvpForm = document.getElementById('rsvp-form');
       const guestCountField = document.getElementById('guest-count-field');
       const guestCountChoices = document.getElementById('guest-count-choices');
@@ -1113,9 +1156,13 @@
         map.searchParams.set('query', `${event.venueName}, ${event.venueAddress}`);
         document.getElementById('venue-map').href = map.href;
         const mock = window.InvitationData.mode === 'mock';
+        document.getElementById('rsvp-notice').textContent = window.InvitationData.previewNotice
+          ? 'Vista previa: tu selección no se envía. Usá el enlace privado de tu familia para confirmar.'
+          : 'Podés modificar tu selección.';
         rsvpSubmit.textContent = 'Confirmar asistencia';
         rsvpForm.querySelectorAll('input[name="attendance"]').forEach((input) => { input.checked = false; });
         rsvpStatus.textContent = '';
+        delete rsvpStatus.dataset.result;
         if (payload.rsvp) {
           rsvpForm.querySelector(`input[value="${payload.rsvp.attending ? 'yes' : 'no'}"]`).checked = true;
           const restoredCount = [...guestCountChoices.querySelectorAll('input')].find((input) => Number(input.value) === payload.rsvp.guestCount);
@@ -1126,26 +1173,47 @@
         window.InvitationSections.render(payload);
       }
 
-      enterButton.disabled = true;
-      window.InvitationData.load().then((payload) => {
-        renderInvitation(payload);
-        enterButton.disabled = false;
-      }).catch(() => {
-        entrance.querySelector('.enter-frame__label').textContent = 'No se pudo cargar';
-      });
+      const loadStatus = document.getElementById('invitation-load-status');
+      const loadMessage = document.getElementById('invitation-load-message');
+      const loadRetry = document.getElementById('invitation-load-retry');
+      let isLoadingInvitation = false;
+      async function loadInvitation() {
+        if (isLoadingInvitation) return;
+        isLoadingInvitation = true;
+        enterButton.disabled = true;
+        entrance.setAttribute('aria-busy', 'true');
+        loadStatus.hidden = window.InvitationData.mode !== 'api';
+        loadMessage.textContent = 'Estamos preparando tu invitación…';
+        loadRetry.hidden = true;
+        try {
+          renderInvitation(await window.InvitationData.load());
+          loadStatus.hidden = true;
+          enterButton.disabled = false;
+        } catch (error) {
+          loadStatus.hidden = false;
+          loadMessage.textContent = error instanceof Error ? error.message : 'No pudimos cargar tu invitación. Intentá nuevamente.';
+          loadRetry.hidden = false;
+        } finally {
+          isLoadingInvitation = false;
+          entrance.removeAttribute('aria-busy');
+        }
+      }
+      loadRetry.addEventListener('click', loadInvitation);
+      void loadInvitation();
 
       function updateAttendanceFields() {
         const answer = rsvpForm.querySelector('input[name="attendance"]:checked');
         const attending = answer?.value === 'yes';
         guestCountField.hidden = !attending;
-        guestCountField.disabled = !attending;
+        guestCountField.disabled = isSavingRsvp || !attending;
+        rsvpForm.querySelectorAll('input[name="attendance"]').forEach((input) => { input.disabled = isSavingRsvp; });
         guestCountChoices.querySelectorAll('input').forEach((input) => {
           input.required = attending;
           if (!attending) input.checked = false;
         });
         const count = selectedGuestCount();
         const validCount = Number.isInteger(count) && count >= 1 && count <= invitationPayload?.invitation.seats;
-        rsvpSubmit.disabled = !answer || (attending && !validCount);
+        rsvpSubmit.disabled = isSavingRsvp || !answer || (attending && !validCount);
       }
       function selectedGuestCount() {
         const selected = guestCountChoices.querySelector('input:checked');
@@ -1154,26 +1222,48 @@
       rsvpForm.addEventListener('change', () => {
         updateAttendanceFields();
         rsvpStatus.textContent = '';
+        delete rsvpStatus.dataset.result;
       });
       rsvpForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const answer = rsvpForm.querySelector('input[name="attendance"]:checked');
-        if (!answer || !invitationPayload) return;
+        if (!answer || !invitationPayload || isSavingRsvp) return;
         if (!rsvpForm.reportValidity()) return;
         const attending = answer.value === 'yes';
-        rsvpSubmit.disabled = true;
+        isSavingRsvp = true;
+        rsvpForm.setAttribute('aria-busy', 'true');
+        updateAttendanceFields();
         try {
           const response = await window.InvitationData.saveRsvp({
             attending,
             guestCount: attending ? selectedGuestCount() : 0,
           });
           invitationPayload.rsvp = response;
-          rsvpStatus.textContent = window.InvitationData.mode === 'mock'
+          const mock = window.InvitationData.mode === 'mock';
+          const inlineMessage = mock
             ? `Elegiste ${response.attending ? `asistir con ${response.guestCount} ${response.guestCount === 1 ? 'persona' : 'personas'}` : 'no asistir'}. ¡Gracias!`
             : 'Tu respuesta quedó guardada. ¡Gracias!';
+          window.InvitationFeedback.show({
+            inline: rsvpStatus, inlineMessage,
+            message: mock ? 'Vista previa: tu respuesta no se envió.' : response.attending ? 'Gracias por confirmar, te esperamos' : 'Gracias por avisarnos 💛',
+            kind: mock ? 'preview' : 'success',
+          });
         } catch (error) {
-          rsvpStatus.textContent = error instanceof Error ? error.message : 'No pudimos guardar la respuesta. Intentá nuevamente.';
+          if (error.status === 422 && window.InvitationData.mode === 'api') {
+            const selectedAttendance = attending ? 'yes' : 'no';
+            const selectedCount = selectedGuestCount();
+            try {
+              renderInvitation(await window.InvitationData.load());
+              rsvpForm.querySelector(`input[name="attendance"][value="${selectedAttendance}"]`).checked = true;
+              const count = [...guestCountChoices.querySelectorAll('input')].find((input) => Number(input.value) === selectedCount);
+              if (attending && count) count.checked = true;
+            } catch { /* Keep the user's current selection if a refresh is unavailable. */ }
+          }
+          const message = error instanceof Error ? error.message : 'No pudimos guardar la respuesta. Intentá nuevamente.';
+          window.InvitationFeedback.show({ inline: rsvpStatus, message, kind: 'error' });
         } finally {
+          isSavingRsvp = false;
+          rsvpForm.removeAttribute('aria-busy');
           updateAttendanceFields();
         }
       });
@@ -1336,7 +1426,7 @@
       }
 
       enterButton.addEventListener('click', async () => {
-        if (isEntering) return;
+        if (isEntering || isLoadingInvitation || !invitationPayload) return;
         isEntering = true;
         enterButton.disabled = true;
         entrance.setAttribute('aria-busy', 'true');

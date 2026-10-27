@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .link_crypto import validate_link_key
+
 
 DEFAULT_DATABASE_PATH = Path(__file__).resolve().parents[1] / "data" / "invitations.sqlite3"
 
@@ -12,9 +14,10 @@ DEFAULT_DATABASE_PATH = Path(__file__).resolve().parents[1] / "data" / "invitati
 @dataclass(frozen=True, slots=True)
 class Settings:
     database_path: Path = field(default_factory=lambda: DEFAULT_DATABASE_PATH)
-    admin_api_key: str | None = None
+    admin_api_key: str | None = field(default=None, repr=False)
     allowed_origins: tuple[str, ...] = ()
     enable_docs: bool = False
+    link_encryption_key: str | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         database_path = Path(self.database_path)
@@ -26,6 +29,10 @@ class Settings:
                 not 33 <= ord(character) <= 126 for character in self.admin_api_key
             ):
                 raise ValueError("MIA_ADMIN_API_KEY must contain 32–256 printable ASCII characters, without spaces.")
+        if self.link_encryption_key is not None:
+            validate_link_key(self.link_encryption_key)
+            if self.link_encryption_key == self.admin_api_key:
+                raise ValueError("Use distinct administrative and link-encryption keys.")
         origins = []
         for origin in self.allowed_origins:
             origin = origin.strip().rstrip("/")
@@ -58,4 +65,5 @@ class Settings:
             admin_api_key=os.getenv("MIA_ADMIN_API_KEY") or None,
             allowed_origins=tuple(filter(None, os.getenv("MIA_ALLOWED_ORIGINS", "").split(","))),
             enable_docs=docs in {"true", "1"},
+            link_encryption_key=os.getenv("MIA_LINK_ENCRYPTION_KEY") or None,
         )

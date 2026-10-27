@@ -95,6 +95,17 @@ def test_empty_rotation_post_does_not_require_json_header():
         assert client.post("/api/admin/rotate", headers={"Authorization": f"Bearer {KEY}"}).status_code == 200
 
 
+def test_admin_live_search_reads_have_a_separate_budget_from_writes():
+    with TestClient(make_app(admin_limit=2, admin_read_limit=3)) as client:
+        auth = {"Authorization": f"Bearer {KEY}"}
+        for _ in range(3):
+            assert client.get("/api/admin/event", headers=auth).status_code == 200
+        assert client.get("/api/admin/event", headers=auth).status_code == 429
+        for _ in range(2):
+            assert client.post("/api/admin/rotate", headers=auth).status_code == 200
+        assert client.post("/api/admin/rotate", headers=auth).status_code == 429
+
+
 @pytest.mark.parametrize("content_type", [None, "text/plain", "application/x-www-form-urlencoded", "application/json, text/plain"])
 def test_non_json_write_rejected(content_type):
     with TestClient(make_app()) as client:

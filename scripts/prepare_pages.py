@@ -8,6 +8,10 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_FILES = (
     "index.html",
+    "app-config.js",
+    "admin.html",
+    "admin.css",
+    "admin.js",
     "invitation-data.js",
     "invitation-sections.js",
     "music-player.js",

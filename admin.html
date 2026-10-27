@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#170f2e" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <title>Mia · Administración</title>
+  <link rel="stylesheet" href="./admin.css?v=card-flip2" />
+  <script src="./app-config.js"></script>
+  <script src="./admin.js?v=card-flip2" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <div class="app-shell">
+    <header class="site-header">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">M</span><div><strong>La noche de Mia</strong><span>XV · Administración</span></div></div>
+      <button class="button button-quiet" id="logout" type="button" hidden>Cerrar sesión</button>
+    </header>
+    <main id="main">
+      <section class="login-panel surface" id="login-panel" aria-labelledby="login-title">
+        <span class="section-kicker">Un lugar para organizarlo todo</span>
+        <h1 id="login-title">Cada invitado,<br /><em>parte de la magia.</em></h1>
+        <p class="intro-copy">Administrá tus familias invitadas, seguí las confirmaciones y guardá los deseos de quienes te acompañan.</p>
+        <div class="notice" id="config-notice" role="status" hidden></div>
+        <form id="login-form">
+          <label for="admin-key">Clave de administración</label>
+          <input id="admin-key" name="password" type="password" autocomplete="current-password" required minlength="32" maxlength="256" spellcheck="false" autocapitalize="off" />
+          <button class="button button-primary" id="login-submit" type="submit">Ingresar al panel <span aria-hidden="true">↗</span></button>
+        </form>
+        <p class="field-note">Tu sesión puede durar hasta 12 horas y se mantiene al recargar. La clave no se guarda en el navegador. Cerrá sesión si compartís el dispositivo.</p>
+        <p class="status status-error" id="login-status" role="alert"></p>
+        <button class="button button-quiet" id="logout-retry" type="button" hidden>Reintentar cierre de sesión</button>
+      </section>
+
+      <div id="dashboard" hidden>
+        <section class="page-heading">
+          <div><span class="section-kicker">El gran día empieza acá</span><h1>Tus invitados,<br class="mobile-break" /> <em>bien cerquita.</em></h1><p>Todo lo que necesitás para preparar una noche inolvidable.</p></div>
+          <button class="button button-quiet" id="refresh" type="button"><span aria-hidden="true">↻</span> Actualizar</button>
+        </section>
+        <p id="dashboard-status" class="status" role="status" aria-live="polite"></p>
+
+        <section class="summary-grid" aria-label="Resumen de invitaciones" id="summary-grid">
+          <div class="summary-item"><span class="summary-label">Familias activas</span><strong data-summary="activeInvitations">—</strong><small>Personas invitadas: <span data-summary="reservedSeats">—</span></small></div>
+          <div class="summary-item summary-confirmed"><span class="summary-label">Confirmaron</span><strong data-summary="confirmedInvitations">—</strong><small>Personas confirmadas: <span data-summary="confirmedGuests">—</span></small></div>
+          <div class="summary-item"><span class="summary-label">No asisten</span><strong data-summary="declinedInvitations">—</strong><small>Familias que respondieron no</small></div>
+          <div class="summary-item"><span class="summary-label">Pendientes</span><strong data-summary="pendingInvitations">—</strong><small>Aún no respondieron</small></div>
+        </section>
+        <p class="summary-footnote">Los estados cuentan familias activas. <span data-summary="reservedSeats">—</span> lugares reservados · <span data-summary="totalInvitations">—</span> familias en total, incluidas las desactivadas.</p>
+
+        <div class="workspace">
+          <aside class="surface create-panel" aria-labelledby="create-title">
+            <div class="section-icon" aria-hidden="true">✧</div>
+            <span class="section-kicker">Sumá a quienes querés</span>
+            <h2 id="create-title">Una nueva familia</h2>
+            <p>Un nombre, sus lugares y un enlace único para compartir.</p>
+            <form id="create-form">
+              <label for="family-name">Familia o nombre del invitado</label>
+              <input id="family-name" name="familyName" required maxlength="120" placeholder="Por ejemplo, Familia Gómez" autocomplete="off" />
+              <label for="family-seats">Lugares reservados</label>
+              <input id="family-seats" name="seats" type="number" min="1" max="50" step="1" value="1" required inputmode="numeric" />
+              <button class="button button-primary" id="create-submit" type="submit">Crear invitación <span aria-hidden="true">+</span></button>
+            </form>
+            <p class="field-note">Los lugares son el máximo de personas que esa familia podrá confirmar.</p>
+            <p id="create-status" class="status" role="status" aria-live="polite"></p>
+          </aside>
+
+          <section class="surface guests-panel" aria-labelledby="guests-title">
+            <div class="section-topline"><div><span class="section-kicker">Tu lista especial</span><h2 id="guests-title">Familias invitadas</h2></div><span class="small-tag">Enlaces privados</span></div>
+            <form class="search-form" id="guest-search-form" role="search">
+              <label class="visually-hidden" for="guest-search">Buscar familia</label>
+              <input id="guest-search" type="search" maxlength="120" placeholder="Buscar una familia…" autocomplete="off" />
+              <button class="button button-quiet" type="submit">Buscar</button>
+            </form>
+            <div class="filter-tabs" role="group" aria-label="Filtrar por respuesta">
+              <button type="button" class="filter-tab" data-filter="active" aria-pressed="true">Activas</button>
+              <button type="button" class="filter-tab" data-filter="confirmed" aria-pressed="false">Confirmaron</button>
+              <button type="button" class="filter-tab" data-filter="declined" aria-pressed="false">No asisten</button>
+              <button type="button" class="filter-tab" data-filter="pending" aria-pressed="false">Pendientes</button>
+              <button type="button" class="filter-tab" data-filter="inactive" aria-pressed="false">Desactivadas</button>
+            </div>
+            <div id="guests-list" class="guests-list" aria-busy="false"></div>
+            <p id="guests-status" class="status" role="status" aria-live="polite"></p>
+            <nav class="pagination" aria-label="Páginas de familias"><button class="button button-quiet" id="guests-prev" type="button" disabled>← Anterior</button><span id="guests-page">Página 1</span><button class="button button-quiet" id="guests-next" type="button" disabled>Siguiente →</button></nav>
+          </section>
+        </div>
+
+        <section class="surface wishes-panel" aria-labelledby="wishes-title">
+          <div class="section-topline"><div><span class="section-kicker">Palabras para atesorar</span><h2 id="wishes-title">Los deseos para Mia</h2><p>Mensajes privados, solo para vos.</p></div><span class="small-tag">Deseos recibidos: <span data-summary="totalWishes">—</span></span></div>
+          <form class="search-form" id="wish-search-form" role="search"><label class="visually-hidden" for="wish-search">Buscar entre los deseos</label><input id="wish-search" type="search" maxlength="120" placeholder="Buscar un nombre o un mensaje…" autocomplete="off" /><button class="button button-quiet" type="submit">Buscar</button></form>
+          <div id="wishes-list" class="wishes-list" aria-busy="false"></div>
+          <p id="wishes-status" class="status" role="status" aria-live="polite"></p>
+          <nav class="pagination" aria-label="Páginas de deseos"><button class="button button-quiet" id="wishes-prev" type="button" disabled>← Anterior</button><span id="wishes-page">Página 1</span><button class="button button-quiet" id="wishes-next" type="button" disabled>Siguiente →</button></nav>
+        </section>
+      </div>
+    </main>
+    <footer class="site-footer"><span aria-hidden="true">✧</span> Mia · Mis XV años <span aria-hidden="true">✧</span></footer>
+  </div>
+
+  <dialog id="edit-dialog" class="panel-dialog" aria-labelledby="edit-title">
+    <div class="dialog-heading"><h2 id="edit-title">Editar invitación</h2><button class="icon-button" type="button" data-close="edit-dialog" aria-label="Cerrar edición">×</button></div>
+    <form id="edit-form"><label for="edit-name">Familia o nombre del invitado</label><input id="edit-name" required maxlength="120" /><label for="edit-seats">Lugares reservados</label><input id="edit-seats" type="number" min="1" max="50" step="1" required inputmode="numeric" /><p class="field-note">No se puede reducir el cupo por debajo de la cantidad ya confirmada.</p><p id="edit-status" class="status" role="status" aria-live="polite"></p><button class="button button-primary" id="edit-submit" type="submit">Guardar cambios</button></form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="panel-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-copy"><h2 id="confirm-title"></h2><p id="confirm-copy"></p><div class="dialog-actions"><button class="button button-quiet" id="confirm-cancel" type="button" autofocus>Cancelar</button><button class="button button-primary" id="confirm-accept" type="button">Continuar</button></div></dialog>
+</body>
+</html>

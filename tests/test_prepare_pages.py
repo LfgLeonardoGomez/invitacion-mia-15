@@ -51,11 +51,13 @@ class PublicArtifactTests(unittest.TestCase):
             self.assertEqual(sentinel.read_text("utf-8"), "keep")
 
     def test_current_local_references_are_in_the_allowlist(self):
-        html = (ROOT / "index.html").read_text("utf-8")
+        html = (ROOT / "index.html").read_text("utf-8") + (ROOT / "admin.html").read_text("utf-8")
         playlist = (ROOT / "music-playlist.js").read_text("utf-8")
         references = re.findall(r'src="(\./[^\"]+)"', html)
         references += re.findall(r"src:\s*'(\./[^']+)'", playlist)
         for reference in references:
+            self.assertIn(reference.removeprefix("./").split("?")[0], PUBLIC_FILES)
+        for reference in re.findall(r'href="(\./[^\"]+\.css(?:\?[^\"]*)?)"', html):
             self.assertIn(reference.removeprefix("./").split("?")[0], PUBLIC_FILES)
 
 

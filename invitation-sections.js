@@ -1,4 +1,4 @@
-/* Secciones adicionales de la tarjeta: no realizan solicitudes a la API. */
+/* Secciones adicionales: guardado a través del adaptador mock/API. */
 (() => {
   function countdown(target, now = Date.now()) {
     if (!Number.isFinite(target) || !Number.isFinite(now)) return null;
@@ -15,6 +15,55 @@
   let timer;
   let deadline = NaN;
   let bound = false;
+
+  let feedbackTimer;
+  let feedbackVersion = 0;
+  let feedbackAnimations = [];
+
+  function clearFeedback() {
+    feedbackVersion += 1;
+    clearTimeout(feedbackTimer);
+    feedbackAnimations.forEach((animation) => animation.cancel());
+    feedbackAnimations = [];
+    const panel = document.getElementById('form-feedback');
+    if (panel) panel.hidden = true;
+  }
+
+  function showFeedback({ message, inline, inlineMessage = message, kind = 'success' }) {
+    clearFeedback();
+    const version = feedbackVersion;
+    const panel = document.getElementById('form-feedback');
+    const announcement = document.getElementById('feedback-announcement');
+    inline.textContent = inlineMessage;
+    inline.dataset.result = kind === 'error' ? 'error' : 'success';
+    // A single live region announces each action; the larger inline result stays readable.
+    document.getElementById('form-feedback-message').textContent = message;
+    announcement.textContent = '';
+    window.requestAnimationFrame(() => {
+      if (version === feedbackVersion) announcement.textContent = message;
+    });
+    panel.dataset.kind = kind;
+    panel.hidden = false;
+    const flight = panel.querySelector('.form-feedback__flight');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof flight.animate === 'function') {
+      const motion = !reduced && kind === 'success';
+      const duration = 5200;
+      const fadeOffset = (motion ? 1000 : 360) / duration;
+      const softEasing = 'cubic-bezier(.45,0,.55,1)';
+      feedbackAnimations.push(flight.animate([
+        { opacity: 0, transform: motion ? 'translateY(calc(100% + 80px))' : 'translateY(0)', offset: 0, easing: softEasing },
+        { opacity: 1, transform: 'translateY(0)', offset: fadeOffset, easing: 'linear' },
+        { opacity: 1, transform: 'translateY(0)', offset: 1 - fadeOffset, easing: softEasing },
+        { opacity: 0, transform: motion ? 'translateY(-32px)' : 'translateY(0)', offset: 1 },
+      ], { duration, easing: 'linear', fill: 'both' }));
+    }
+    feedbackTimer = setTimeout(() => {
+      if (version === feedbackVersion) clearFeedback();
+    }, 5200);
+  }
+
+  window.InvitationFeedback = Object.freeze({ show: showFeedback, clear: clearFeedback });
 
   function whatsappLink(number, name) {
     if (typeof number !== 'string' || !/^[1-9]\d{7,14}$/.test(number)) return null;
@@ -161,10 +210,12 @@
     const message = document.getElementById('wish-message');
     const status = document.getElementById('wish-status');
     form.addEventListener('input', () => {
+      window.InvitationData.resetWishAttempt?.();
       author.setCustomValidity('');
       message.setCustomValidity('');
       document.getElementById('wish-length').textContent = `${message.value.length} / 600`;
       status.textContent = '';
+      delete status.dataset.result;
     });
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -173,14 +224,30 @@
       if (!form.reportValidity()) return;
       const submit = document.getElementById('wish-submit');
       submit.disabled = true;
+      author.disabled = true;
+      message.disabled = true;
+      form.setAttribute('aria-busy', 'true');
       try {
         const wish = await window.InvitationData.saveWish({ author: author.value, message: message.value });
         renderWish(wish);
-        status.textContent = '¡Gracias por tu deseo!';
+        form.reset();
+        author.setCustomValidity('');
+        message.setCustomValidity('');
+        document.getElementById('wish-length').textContent = '0 / 600';
+        window.InvitationData.resetWishAttempt?.();
+        const api = window.InvitationData.mode === 'api';
+        showFeedback({ inline: status, kind: api ? 'success' : 'preview',
+          inlineMessage: api ? 'Tu deseo quedó guardado para Mia. ¡Gracias!' : '¡Gracias por tu deseo!',
+          message: api ? 'Mia ya recibió tu mensaje 💕' : 'Vista previa: tu deseo no se envió.',
+        });
       } catch (error) {
-        status.textContent = error instanceof Error ? error.message : 'No pudimos guardar tu deseo. Intentá nuevamente.';
+        const feedbackMessage = error instanceof Error ? error.message : 'No pudimos guardar tu deseo. Intentá nuevamente.';
+        showFeedback({ inline: status, message: feedbackMessage, kind: 'error' });
       } finally {
         submit.disabled = false;
+        author.disabled = false;
+        message.disabled = false;
+        form.removeAttribute('aria-busy');
       }
     });
   }
@@ -204,6 +271,11 @@
     if (contactLink) contact.href = contactLink;
     contact.setAttribute('aria-label', `Contactar a la mamá de ${payload.event.name} por WhatsApp`);
     document.getElementById('wish-submit').textContent = 'Enviar mi deseo';
+    document.getElementById('wish-notice').textContent = window.InvitationData.previewNotice
+      ? 'Vista previa: este deseo no se envía. Usá el enlace privado de tu familia.'
+      : window.InvitationData.mode === 'api'
+        ? 'Tu deseo es privado: solo lo verá la familia de Mia. Hasta 10 mensajes por invitación.'
+        : 'Tu nombre aparecerá junto a tu mensaje.';
   }
 
   window.InvitationSections = Object.freeze({ countdown, whatsappLink, render });
