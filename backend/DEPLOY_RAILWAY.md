@@ -41,6 +41,18 @@ normal del proveedor. No importar assets, referencias ni datos locales al servic
 
 ## Frontend Vercel (siguiente etapa)
 
+La API pública configurada es `https://invitacion-mia-15-production.up.railway.app`.
+Importar el repositorio como un proyecto Vercel con Framework Preset **Other**,
+Root Directory **raíz del repositorio**, no `/backend`. `vercel.json` ya declara
+la copia por allowlist a `public`, configuración pública de mismo origen,
+rewrite a Railway y desactivación de caché para `/api/*`.
+El comando denominado build por Vercel solo copia archivos: no compila el frontend.
+No agregar claves al proyecto Vercel. La misma publicación sirve `/` y `/admin.html`.
+Después de obtener el dominio de producción, poner su origen exacto en
+`MIA_ALLOWED_ORIGINS` de Railway y aplicar los cambios antes de probar el login.
+No usar dominios preview para distribuir enlaces. Mantener analytics deshabilitado
+durante las pruebas y revisar las opciones de logs con tokens antes de entregar.
+
 Publicar únicamente los archivos seleccionados por `scripts/prepare_pages.py`.
 Nunca servir la raíz del repositorio: contiene código y documentación privados.
 Crear una rewrite `/api/:path*` hacia `https://DOMINIO-RAILWAY/api/:path*`.

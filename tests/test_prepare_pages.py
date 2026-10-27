@@ -1,6 +1,7 @@
 """The public artifact must never be the repository root."""
 
 from pathlib import Path
+import json
 import re
 import tempfile
 import unittest
@@ -9,6 +10,28 @@ from scripts.prepare_pages import PUBLIC_FILES, ROOT, prepare_pages
 
 
 class PublicArtifactTests(unittest.TestCase):
+    def test_vercel_uses_allowlist_and_explicit_api_proxy(self):
+        config = json.loads((ROOT / "vercel.json").read_text("utf-8"))
+        self.assertEqual(config["outputDirectory"], "public")
+        self.assertIn("--same-origin-api", config["buildCommand"])
+        self.assertEqual(config["rewrites"], [{
+            "source": "/api/:path*",
+            "destination": "https://invitacion-mia-15-production.up.railway.app/api/:path*",
+        }])
+        api_headers = next(item["headers"] for item in config["headers"] if item["source"] == "/api/:path*")
+        self.assertIn({"key": "Cache-Control", "value": "private, no-store"}, api_headers)
+
+    def test_same_origin_config_only_changes_generated_artifact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source"
+            self.populate(source)
+            target = Path(directory) / "site"
+            original = (source / "app-config.js").read_bytes()
+            prepare_pages(target, source, same_origin_api=True)
+            self.assertIn("apiBaseUrl: ''", (target / "app-config.js").read_text("utf-8"))
+            self.assertEqual((source / "app-config.js").read_bytes(), original)
+            self.assertFalse((target / "backend").exists())
+
     def populate(self, source):
         for relative in PUBLIC_FILES:
             path = source / relative

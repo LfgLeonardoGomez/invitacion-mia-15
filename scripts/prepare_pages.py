@@ -24,7 +24,7 @@ PUBLIC_FILES = (
 )
 
 
-def prepare_pages(destination: Path, source: Path = ROOT) -> tuple[str, ...]:
+def prepare_pages(destination: Path, source: Path = ROOT, *, same_origin_api: bool = False) -> tuple[str, ...]:
     source = source.resolve(strict=True)
     destination = destination.absolute()
     if destination.exists():
@@ -39,6 +39,12 @@ def prepare_pages(destination: Path, source: Path = ROOT) -> tuple[str, ...]:
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source / relative, target)
+    if same_origin_api:
+        # Public settings only; no host-specific URL or secret in the artifact.
+        (destination / "app-config.js").write_text(
+            "window.MIA_CONFIG = Object.freeze({apiBaseUrl: '', invitationBaseUrl: null});\n",
+            encoding="utf-8",
+        )
     (destination / ".nojekyll").write_text("", encoding="utf-8")
     return (*PUBLIC_FILES, ".nojekyll")
 
@@ -46,6 +52,7 @@ def prepare_pages(destination: Path, source: Path = ROOT) -> tuple[str, ...]:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=Path)
+    parser.add_argument("--same-origin-api", action="store_true", help="Use the site's /api proxy (Vercel only).")
     args = parser.parse_args()
-    files = prepare_pages(args.destination)
+    files = prepare_pages(args.destination, same_origin_api=args.same_origin_api)
     print(f"Prepared {len(files)} public files without a build.")
