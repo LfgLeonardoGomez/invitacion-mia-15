@@ -15,13 +15,12 @@
     rsvp: null,
     sections: {
       eventUtcOffset: '-03:00',
-      // Solo para revisar el diseño: sustituir y retirar illustrative al tener datos reales.
       bankTransfer: {
-        holder: 'Mia · XV años',
-        bank: 'Banco ilustrativo',
-        alias: 'ALIAS A CONFIRMAR',
-        accountNumber: '0000000000000000000000',
-        illustrative: true,
+        holder: 'Mia Aylen Torres',
+        bank: 'Mercado Pago',
+        alias: 'mia.aylen.torres67',
+        accountNumber: '',
+        illustrative: false,
       },
       contact: { whatsappNumber: '5491141675124' },
     },

@@ -461,11 +461,13 @@ def inspect_extra_sections(browser):
         assert page.locator('#transfer-pending').is_hidden()
         assert not page.locator('#transfer-dialog').evaluate('el => el.open')
         page.locator('#transfer-open').click()
-        assert page.locator('#transfer-fields input').count() == 4
-        assert page.locator('#transfer-alias').input_value() == 'ALIAS A CONFIRMAR'
-        assert page.locator('#transfer-accountNumber').input_value() == '0' * 22
-        assert page.locator('#transfer-disclaimer').is_visible()
-        assert page.get_by_role('button', name='Copiar Alias', exact=True).is_disabled()
+        assert page.locator('#transfer-fields input').count() == 3
+        assert page.locator('#transfer-holder').input_value() == 'Mia Aylen Torres'
+        assert page.locator('#transfer-bank').input_value() == 'Mercado Pago'
+        assert page.locator('#transfer-alias').input_value() == 'mia.aylen.torres67'
+        assert page.locator('#transfer-accountNumber').count() == 0
+        assert page.locator('#transfer-disclaimer').is_hidden()
+        assert page.get_by_role('button', name='Copiar Alias', exact=True).is_enabled()
         if zone == 'America/Argentina/Buenos_Aires':
             page.screenshot(path=str(OUTPUT / 'gifts-translucent-modal.png'))
         page.locator('#transfer-close').click()

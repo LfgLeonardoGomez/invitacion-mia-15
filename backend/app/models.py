@@ -126,8 +126,8 @@ DEFAULT_SECTIONS = SectionsData(
     event_utc_offset="-03:00",
     contact=ContactData(whatsapp_number="5491141675124"),
     bank_transfer=BankTransferData(
-        holder="Mia · XV años", bank="Banco ilustrativo", alias="ALIAS A CONFIRMAR",
-        account_number="0000000000000000000000", illustrative=True,
+        holder="Mia Aylen Torres", bank="Mercado Pago", alias="mia.aylen.torres67",
+        account_number="", illustrative=False,
     ),
 )
 
