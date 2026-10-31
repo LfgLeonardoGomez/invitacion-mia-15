@@ -43,6 +43,7 @@ def inspect(browser, width, height):
     links['third'] = None
     csrf = "C" * 43
     searches = []
+    sections = {"eventUtcOffset": "-03:00", "contact": {"whatsappNumber": "5491141675124"}, "bankTransfer": {"holder": "Prueba", "bank": "Prueba", "alias": "alias.prueba", "accountNumber": "", "illustrative": True}}
 
     def fulfill(route, data, status=200, headers=None):
         route.fulfill(status=status, content_type="application/json", body=json.dumps(data), headers={"Access-Control-Allow-Origin": base, "Access-Control-Allow-Credentials": "true", **(headers or {})})
@@ -57,7 +58,7 @@ def inspect(browser, width, height):
         path = parts.path.removeprefix("/api/admin")
         requests.append((request.method, path))
         if request.method == "OPTIONS":
-            fulfill(route, {}, headers={"Access-Control-Allow-Headers": "Authorization, X-CSRF-Token, Content-Type", "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS"})
+            fulfill(route, {}, headers={"Access-Control-Allow-Headers": "Authorization, X-CSRF-Token, Content-Type", "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS"})
             return
         if path == "/session" and request.method == "POST":
             assert request.headers.get("authorization") == "Bearer " + "A" * 40
@@ -80,6 +81,11 @@ def inspect(browser, width, height):
         elif path == "/summary":
             active = [item for item in families if item["active"]]
             fulfill(route, {"totalInvitations": len(families), "activeInvitations": len(active), "confirmedInvitations": sum(bool(item["rsvp"] and item["rsvp"]["attending"]) for item in active), "declinedInvitations": sum(bool(item["rsvp"] and not item["rsvp"]["attending"]) for item in active), "pendingInvitations": sum(item["rsvp"] is None for item in active), "confirmedGuests": sum(item["rsvp"]["guestCount"] for item in active if item["rsvp"]), "reservedSeats": sum(item["seats"] for item in active), "totalWishes": len(wishes)})
+        elif path == "/sections":
+            if request.method == "PUT":
+                assert request.headers.get("x-csrf-token") == csrf
+                sections.update(request.post_data_json)
+            fulfill(route, sections)
         elif path == "/invitations" and request.method == "POST":
             assert request.headers.get("x-csrf-token") == csrf
             body = request.post_data_json
@@ -145,6 +151,21 @@ def inspect(browser, width, height):
         page.locator("#admin-key").fill("A" * 40)
         page.locator("#login-submit").click()
         page.locator(".guest-row").first.wait_for()
+        page.locator('#bank-submit').wait_for(state='visible')
+        page.wait_for_function("!document.getElementById('bank-submit').disabled")
+        assert 'ilustrativos' in page.locator('#bank-status').inner_text()
+        page.locator('#bank-holder').fill('Mia Aylen Torres')
+        page.locator('#bank-name').fill('Mercado Pago')
+        page.locator('#bank-alias').fill('mia.aylen.torres67')
+        page.locator('#bank-submit').click()
+        page.wait_for_function("document.getElementById('bank-status').textContent.includes('Datos guardados')")
+        assert sections['bankTransfer']['alias'] == 'mia.aylen.torres67'
+        assert sections['bankTransfer']['illustrative'] is False
+        assert sections['contact']['whatsappNumber'] == '5491141675124'
+        page.locator('#bank-enabled').uncheck()
+        page.locator('#bank-submit').click()
+        page.wait_for_function("document.getElementById('bank-status').textContent.includes('ocultos')")
+        assert sections['bankTransfer'] is None
         assert page.locator("#admin-key").input_value() == ""
         assert any(cookie["name"] == "mia_admin_session" and cookie["httpOnly"] for cookie in context.cookies())
         assert page.locator(".guest-row").count() == 20

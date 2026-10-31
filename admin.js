@@ -63,6 +63,8 @@
   let mutationPending = false;
   let guestSearchTimer;
   let wishSearchTimer;
+  let bankLoaded = false;
+  let bankPending = false;
   const LOGOUT_PENDING = 'mia.admin.logoutPending';
   const controllers = new Set();
   const queryControllers = new Map();
@@ -118,11 +120,17 @@
     $('create-form').reset();
     $('guest-search-form').reset();
     $('wish-search-form').reset();
+    $('bank-form').reset();
+    $('bank-fields').disabled = true;
+    $('bank-enabled').disabled = true;
+    $('bank-submit').disabled = true;
+    bankLoaded = false;
+    bankPending = false;
     $('guests-list').replaceChildren();
     $('wishes-list').replaceChildren();
     $('admin-key').value = '';
     document.querySelectorAll('[data-summary]').forEach((element) => { element.textContent = '—'; });
-    ['dashboard-status', 'guests-status', 'wishes-status', 'create-status', 'edit-status'].forEach((id) => status(id));
+    ['dashboard-status', 'guests-status', 'wishes-status', 'create-status', 'edit-status', 'bank-status'].forEach((id) => status(id));
     guestOffset = 0;
     wishOffset = 0;
     guestFilter = 'active';
@@ -184,7 +192,8 @@
           429: 'Hiciste varias consultas seguidas. Esperá un minuto antes de continuar.',
           503: 'La administración no está disponible en este momento. Intentá más tarde.',
         };
-        throw new ApiError(messages[response.status] || 'El servidor no pudo completar la operación. Intentá más tarde.', response.status);
+        const message = response.status === 422 && path === '/sections' ? 'Revisá los datos de transferencia e intentá nuevamente.' : messages[response.status];
+        throw new ApiError(message || 'El servidor no pudo completar la operación. Intentá más tarde.', response.status);
       }
       const data = await response.json();
       if (session !== currentSession) throw new ApiError('Sesión cerrada.', -1);
@@ -405,8 +414,33 @@
     const currentSession = session;
     $('refresh').disabled = true;
     status('dashboard-status');
-    try { await Promise.all([loadSummary(), loadGuests(), loadWishes()]); }
+    try { await Promise.all([loadSummary(), loadGuests(), loadWishes(), ...(bankLoaded ? [] : [loadBank()])]); }
     finally { if (session === currentSession) $('refresh').disabled = false; }
+  }
+  async function loadBank() {
+    if (bankPending) return;
+    const currentSession = session;
+    bankLoaded = false;
+    $('bank-submit').disabled = true;
+    $('bank-enabled').disabled = true;
+    $('bank-fields').disabled = true;
+    status('bank-status', 'Cargando datos…');
+    try {
+      const sections = await request('/sections', { channel: 'bank' });
+      if (session !== currentSession) return;
+      const bank = sections?.bankTransfer;
+      if (bank !== null && (!bank || ['holder', 'bank', 'alias', 'accountNumber'].some((key) => typeof bank[key] !== 'string') || typeof bank.illustrative !== 'boolean')) throw new ApiError('No pudimos verificar los datos recibidos.');
+      $('bank-enabled').checked = bank !== null;
+      $('bank-fields').disabled = bank === null;
+      $('bank-enabled').disabled = false;
+      $('bank-holder').value = bank?.holder || '';
+      $('bank-name').value = bank?.bank || '';
+      $('bank-alias').value = bank?.alias || '';
+      $('bank-account').value = bank?.accountNumber || '';
+      bankLoaded = true;
+      $('bank-submit').disabled = false;
+      status('bank-status', bank?.illustrative ? 'Los datos actuales son ilustrativos y no permiten copiar. Revisalos antes de guardar.' : '');
+    } catch (error) { showError('bank-status', error, currentSession); }
   }
   function openDialog(dialog, returnFocus) {
     if (dialog.open) return;
@@ -598,6 +632,30 @@
   $('logout').addEventListener('click', closeSession);
   $('logout-retry').addEventListener('click', closeSession);
   $('refresh').addEventListener('click', refresh);
+  $('bank-enabled').addEventListener('change', () => { $('bank-fields').disabled = !$('bank-enabled').checked; });
+  $('bank-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!csrfToken || !bankLoaded || bankPending || !event.currentTarget.reportValidity()) return;
+    const enabled = $('bank-enabled').checked;
+    const bank = enabled ? { holder: $('bank-holder').value.trim(), bank: $('bank-name').value.trim(), alias: $('bank-alias').value.trim(), accountNumber: $('bank-account').value.trim(), illustrative: false } : null;
+    if (bank && (!bank.holder || !bank.bank || (!bank.alias && !bank.accountNumber) || (bank.accountNumber && !/^[0-9]{22}$/.test(bank.accountNumber)))) {
+      status('bank-status', 'Completá titular, banco y un alias o CBU/CVU válido de 22 dígitos.', true);
+      return;
+    }
+    const currentSession = session;
+    bankPending = true;
+    $('bank-submit').disabled = true;
+    $('bank-enabled').disabled = true;
+    $('bank-fields').disabled = true;
+    status('bank-status', 'Guardando datos…');
+    try {
+      const sections = await request('/sections');
+      if (!sections || typeof sections !== 'object' || !sections.contact || typeof sections.eventUtcOffset !== 'string') throw new ApiError('No pudimos verificar la configuración actual. No se guardaron cambios.');
+      await request('/sections', { method: 'PUT', body: { ...sections, bankTransfer: bank } });
+      if (session === currentSession) status('bank-status', enabled ? 'Datos guardados. Verificalos en una invitación personalizada.' : 'Datos de transferencia ocultos en las invitaciones.');
+    } catch (error) { showError('bank-status', error, currentSession); }
+    finally { if (session === currentSession) { bankPending = false; $('bank-submit').disabled = false; $('bank-enabled').disabled = false; $('bank-fields').disabled = !$('bank-enabled').checked; } }
+  });
   $('create-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!csrfToken || mutationPending || !event.currentTarget.reportValidity()) return;

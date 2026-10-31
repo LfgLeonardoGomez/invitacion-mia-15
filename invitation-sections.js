@@ -126,7 +126,8 @@
       title.textContent = label;
       const value = document.createElement('input');
       value.id = title.htmlFor;
-      value.value = transfer[key].trim();
+      const originalValue = transfer[key].trim();
+      value.value = originalValue;
       value.readOnly = true;
       row.append(title, value);
       if (key === 'alias' || key === 'accountNumber') {
@@ -141,7 +142,7 @@
           const status = document.getElementById('transfer-status');
           try {
             if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-            await navigator.clipboard.writeText(value.value);
+            await navigator.clipboard.writeText(originalValue);
             status.textContent = `${label} copiado.`;
           } catch {
             value.focus();

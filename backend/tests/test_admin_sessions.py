@@ -86,6 +86,19 @@ def test_cookie_mutations_require_both_origin_and_csrf_and_logout_revokes(client
     assert client.get("/api/admin/session", headers={"Origin": ORIGIN, "Cookie": f"{ADMIN_SESSION_COOKIE}={token}"}).status_code == 401
 
 
+def test_transfer_configuration_rejects_public_and_cross_site_mutations(client):
+    endpoint = '/api/admin/sections'
+    sections = client.get(endpoint, headers=AUTH).json()
+    updated = sections | {'bankTransfer': {'holder': 'Prueba', 'bank': 'Prueba', 'alias': 'alias.prueba', 'accountNumber': '', 'illustrative': False}}
+    assert client.put(endpoint, json=updated).status_code == 401
+    _, session = login(client)
+    assert client.put(endpoint, headers={'Origin': ORIGIN}, json=updated).status_code == 403
+    assert client.put(endpoint, headers={'Origin': 'https://evil.example', 'X-CSRF-Token': session['csrfToken']}, json=updated).status_code == 403
+    assert client.get(endpoint, headers=AUTH).json() == sections
+    response = client.put(endpoint, headers={'Origin': ORIGIN, 'X-CSRF-Token': session['csrfToken']}, json=updated)
+    assert response.status_code == 200 and response.json() == updated
+
+
 def test_get_without_origin_only_accepts_same_origin_fetch_metadata(client):
     login(client)
     assert client.get("/api/admin/session").status_code == 403

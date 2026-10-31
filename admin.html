@@ -7,9 +7,9 @@
   <meta name="referrer" content="no-referrer" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
   <title>Mia · Administración</title>
-  <link rel="stylesheet" href="./admin.css?v=card-flip2" />
+  <link rel="stylesheet" href="./admin.css?v=transfer1" />
   <script src="./app-config.js"></script>
-  <script src="./admin.js?v=card-flip2" defer></script>
+  <script src="./admin.js?v=transfer1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Ir al contenido</a>
@@ -85,6 +85,22 @@
             <nav class="pagination" aria-label="Páginas de familias"><button class="button button-quiet" id="guests-prev" type="button" disabled>← Anterior</button><span id="guests-page">Página 1</span><button class="button button-quiet" id="guests-next" type="button" disabled>Siguiente →</button></nav>
           </section>
         </div>
+
+        <section class="surface wishes-panel" aria-labelledby="bank-title">
+          <div class="section-topline"><div><span class="section-kicker">Regalos</span><h2 id="bank-title">Datos para transferencias</h2><p>Estos datos se muestran a todas las familias invitadas. Verificá el titular y el alias antes de guardar.</p></div></div>
+          <form id="bank-form">
+            <label class="bank-toggle" for="bank-enabled"><input id="bank-enabled" type="checkbox" disabled /> Mostrar datos de transferencia</label>
+            <fieldset id="bank-fields" disabled>
+              <label for="bank-holder">Titular</label><input id="bank-holder" maxlength="120" autocomplete="off" />
+              <label for="bank-name">Banco o billetera</label><input id="bank-name" maxlength="100" autocomplete="off" />
+              <label for="bank-alias">Alias</label><input id="bank-alias" maxlength="100" autocomplete="off" spellcheck="false" />
+              <label for="bank-account">CBU / CVU (opcional)</label><input id="bank-account" inputmode="numeric" pattern="[0-9]{22}" maxlength="22" autocomplete="off" />
+              <p class="field-note">Ingresá un alias o un CBU/CVU de 22 dígitos. Los datos guardados serán visibles en las invitaciones.</p>
+            </fieldset>
+            <p id="bank-status" class="status" role="status" aria-live="polite"></p>
+            <button class="button button-primary" id="bank-submit" type="submit" disabled>Guardar datos</button>
+          </form>
+        </section>
 
         <section class="surface wishes-panel" aria-labelledby="wishes-title">
           <div class="section-topline"><div><span class="section-kicker">Palabras para atesorar</span><h2 id="wishes-title">Los deseos para Mia</h2><p>Mensajes privados, solo para vos.</p></div><span class="small-tag">Deseos recibidos: <span data-summary="totalWishes">—</span></span></div>
