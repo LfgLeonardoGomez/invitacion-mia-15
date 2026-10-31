@@ -199,7 +199,8 @@ def test_migration_from_v3_does_not_replace_legacy_tokens_or_answers(client, set
     answer = client.put(f"/api/invitations/{invitation['token']}/rsvp", json={"attending": True, "guestCount": 2}).json()
     with sqlite3.connect(settings.database_path) as connection:
         connection.execute("ALTER TABLE invitations DROP COLUMN token_ciphertext")
-        connection.execute("DELETE FROM schema_migrations WHERE version = 4")
+        connection.execute("DROP TABLE deleted_wish_requests")
+        connection.execute("DELETE FROM schema_migrations WHERE version >= 4")
     with TestClient(create_app(settings)) as reopened:
         actual = reopened.get(f"/api/invitations/{invitation['token']}")
         assert actual.status_code == 200 and actual.json()["rsvp"] == answer

@@ -185,7 +185,7 @@ class Database:
         # Version 1 is the original three-table store. Adoption never rewrites its data.
         connection.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)")
         version = connection.execute("SELECT COALESCE(MAX(version), 0) FROM schema_migrations").fetchone()[0]
-        if version > 4:
+        if version > 5:
             raise RuntimeError("Database schema is newer than this application.")
         if version < 1:
             connection.execute("INSERT INTO schema_migrations VALUES (1, ?)", (now_iso(),))
@@ -222,6 +222,15 @@ class Database:
             # Existing hash-only links remain valid; none is silently regenerated.
             connection.execute("ALTER TABLE invitations ADD COLUMN token_ciphertext TEXT")
             connection.execute("INSERT INTO schema_migrations VALUES (4, ?)", (now_iso(),))
+        if version < 5:
+            connection.execute("""
+                CREATE TABLE deleted_wish_requests (
+                    invitation_id TEXT NOT NULL REFERENCES invitations(id) ON DELETE CASCADE,
+                    client_request_id TEXT NOT NULL,
+                    PRIMARY KEY (invitation_id, client_request_id)
+                )
+            """)
+            connection.execute("INSERT INTO schema_migrations VALUES (5, ?)", (now_iso(),))
 
     def create_admin_session(self, key_fingerprint: str, *, lifetime: int = 43_200, now: int | None = None) -> tuple[str, dict[str, str]]:
         timestamp = int(time.time()) if now is None else now
@@ -362,12 +371,15 @@ class Database:
             family = connection.execute("SELECT id FROM invitations WHERE token_hash = ? AND active = 1", (digest,)).fetchone()
             if family is None:
                 raise NotFoundError
+            deleted = connection.execute("SELECT 1 FROM deleted_wish_requests WHERE invitation_id = ? AND client_request_id = ?", (family["id"], wish.client_request_id)).fetchone()
+            if deleted is not None:
+                raise WishConflictError
             previous = connection.execute("SELECT * FROM wishes WHERE invitation_id = ? AND client_request_id = ?", (family["id"], wish.client_request_id)).fetchone()
             if previous is not None:
                 if (previous["author"], previous["message"]) != (wish.author, wish.message):
                     raise WishConflictError
                 return wish_from_row(previous)
-            count = connection.execute("SELECT COUNT(*) FROM wishes WHERE invitation_id = ?", (family["id"],)).fetchone()[0]
+            count = connection.execute("SELECT (SELECT COUNT(*) FROM wishes WHERE invitation_id = ?) + (SELECT COUNT(*) FROM deleted_wish_requests WHERE invitation_id = ?)", (family["id"], family["id"])).fetchone()[0]
             if count >= MAX_WISHES_PER_INVITATION:
                 raise WishLimitError
             timestamp = now_iso()
@@ -381,6 +393,14 @@ class Database:
         with self.transaction() as connection:
             rows = connection.execute("SELECT w.*, i.family_name FROM wishes w JOIN invitations i ON i.id = w.invitation_id" + where + " ORDER BY w.created_at DESC, w.id DESC LIMIT ? OFFSET ?", (*parameters, limit, offset)).fetchall()
             return [AdminWish(**wish_from_row(row).model_dump(), invitation_id=row["invitation_id"], family_name=row["family_name"]) for row in rows]
+
+    def delete_wish(self, wish_id: str) -> None:
+        with self.transaction(write=True) as connection:
+            row = connection.execute("SELECT invitation_id, client_request_id FROM wishes WHERE id = ?", (wish_id,)).fetchone()
+            if row is None:
+                raise NotFoundError
+            connection.execute("INSERT INTO deleted_wish_requests (invitation_id, client_request_id) VALUES (?, ?)", (row["invitation_id"], row["client_request_id"]))
+            connection.execute("DELETE FROM wishes WHERE id = ?", (wish_id,))
 
     def summary(self) -> AdminSummary:
         with self.transaction() as connection:

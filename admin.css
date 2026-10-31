@@ -127,6 +127,7 @@ input[readonly] { font-family:var(--sans); font-size:12px; }
 .wish-copy { white-space:pre-wrap; overflow-wrap:anywhere; font:normal 20px/1.55 var(--serif); color:#eee0f1; }
 .wish-signature { margin-top:17px; font-size:12px; color:var(--gold); overflow-wrap:anywhere; }
 .wish-family,.wish-date { color:var(--muted); font-size:10px; overflow-wrap:anywhere; margin-top:4px; }
+.wish-card .button { margin-top:18px; color:#f0c7c3; }
 .wishes-list>.empty-state { grid-column:1/-1; }
 .site-footer { display:flex; align-items:center; justify-content:center; gap:14px; color:#ad9ab8; font:13px var(--serif); padding:44px 0; }
 .site-footer>span { color:#a68a65; }

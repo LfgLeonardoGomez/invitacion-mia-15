@@ -99,6 +99,17 @@ def test_transfer_configuration_rejects_public_and_cross_site_mutations(client):
     assert response.status_code == 200 and response.json() == updated
 
 
+def test_delete_wish_cookie_requires_origin_and_csrf(client):
+    created = client.post('/api/admin/invitations', headers=AUTH, json={'familyName': 'Familia', 'seats': 1}).json()
+    from uuid import uuid4
+    saved = client.post(f"/api/invitations/{created['token']}/wishes", json={'author': 'Ana', 'message': 'Hola', 'clientRequestId': str(uuid4())}).json()
+    endpoint = f"/api/admin/wishes/{saved['id']}"
+    _, session = login(client)
+    assert client.delete(endpoint, headers={'Origin': ORIGIN}).status_code == 403
+    assert client.delete(endpoint, headers={'Origin': 'https://evil.example', 'X-CSRF-Token': session['csrfToken']}).status_code == 403
+    assert client.delete(endpoint, headers={'Origin': ORIGIN, 'X-CSRF-Token': session['csrfToken']}).status_code == 200
+
+
 def test_get_without_origin_only_accepts_same_origin_fetch_metadata(client):
     login(client)
     assert client.get("/api/admin/session").status_code == 403
@@ -214,10 +225,11 @@ def test_adopts_existing_v2_database_without_overwriting_records(settings):
     with sqlite3.connect(settings.database_path) as connection:
         before = connection.execute("SELECT data_json FROM event").fetchone()[0]
         connection.execute("DROP TABLE admin_sessions")
+        connection.execute("DROP TABLE deleted_wish_requests")
         connection.execute("ALTER TABLE invitations DROP COLUMN token_ciphertext")
         connection.execute("DELETE FROM schema_migrations WHERE version >= 3")
     store.initialize()
     store.initialize()
     with sqlite3.connect(settings.database_path) as connection:
         assert connection.execute("SELECT data_json FROM event").fetchone()[0] == before
-        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [(1,), (2,), (3,), (4,)]
+        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [(1,), (2,), (3,), (4,), (5,)]

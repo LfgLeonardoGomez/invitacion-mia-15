@@ -341,6 +341,7 @@
         textElement('p', 'wish-family', item.familyName),
         textElement('p', 'wish-date', formatDate(item.createdAt || item.updatedAt)),
       );
+      article.append(rowButton('Eliminar deseo', (event) => deleteWish(item, event.currentTarget), `Eliminar deseo de ${item.author}`));
       container.append(article);
     }
   }
@@ -498,6 +499,23 @@
     $('confirm-accept').textContent = accept;
     openDialog($('confirm-dialog'), returnFocus);
     return new Promise((resolve) => { pendingConfirmation = resolve; });
+  }
+  async function deleteWish(item, button) {
+    if (!csrfToken || mutationPending || typeof item.id !== 'string') return;
+    const currentSession = session;
+    const accepted = await confirmAction('¿Eliminar este deseo?', 'El mensaje se eliminará y no se podrá recuperar desde el panel. Seguirá contando para el límite de esta invitación.', 'Eliminar deseo', button);
+    if (!accepted || session !== currentSession || !csrfToken || mutationPending) return;
+    mutationPending = true;
+    button.disabled = true;
+    status('wishes-status', 'Eliminando deseo…');
+    try {
+      await request(`/wishes/${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+      if (session !== currentSession) return;
+      if (wishOffset > 0 && $('wishes-list').children.length === 1) wishOffset = Math.max(0, wishOffset - PAGE_SIZE);
+      await Promise.all([loadWishes(), loadSummary()]);
+      if (session === currentSession) status('wishes-status', 'Deseo eliminado.');
+    } catch (error) { showError('wishes-status', error, currentSession); }
+    finally { if (session === currentSession) { mutationPending = false; if (button.isConnected) button.disabled = false; } }
   }
   function openEditor(item, card) {
     if (!csrfToken) return;

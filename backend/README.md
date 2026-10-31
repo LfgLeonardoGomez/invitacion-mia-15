@@ -50,6 +50,7 @@ JSON camelCase. Se rechazan campos extra y conversiones de tipos peligrosas (por
 | `GET /api/admin/invitations/{id}/link` | Admin + cifrado configurado | Recupera `{ id, token, invitationPath }` para copiar; no-store, nunca en listados |
 | `GET /api/admin/summary` | Admin | Totales de familias, cupos, asistentes confirmados y deseos |
 | `GET /api/admin/wishes?limit=50&offset=0&q=` | Admin | Deseos privados con autor, mensaje, fecha y familia; máximo 200 por página |
+| `DELETE /api/admin/wishes/{id}` | Admin | Elimina el contenido de un deseo; sigue contando para el límite de la invitación |
 | `GET /api/admin/sections` | Admin | Zona horaria, contacto y datos bancarios |
 | `PUT /api/admin/sections` | Admin | Reemplaza toda la configuración de secciones |
 

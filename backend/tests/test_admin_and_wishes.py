@@ -86,6 +86,39 @@ def test_wishes_are_private_append_only_and_idempotent(client):
     assert "clientRequestId" not in listed[0] and "token" not in str(listed)
 
 
+def test_admin_can_delete_wish_without_freeing_invitation_quota(client):
+    invite = family(client)
+    public_url = f"/api/invitations/{invite['token']}"
+    store = client.app.state.database
+    bodies = [wish(message=f'Mensaje {i}') for i in range(10)]
+    wishes = [store.save_wish(invite['token'], WishInput.model_validate(body)).model_dump(by_alias=True) for body in bodies]
+    target = wishes[-1]['id']
+    endpoint = f'/api/admin/wishes/{target}'
+    assert client.post(public_url + '/wishes', json=wish()).status_code == 409
+    assert client.delete(endpoint).status_code == 401
+    assert client.delete(endpoint, headers=AUTH).json() == {'deleted': True}
+    assert client.delete(endpoint, headers=AUTH).status_code == 404
+    assert client.delete(f"/api/admin/wishes/{wishes[-2]['id']}", headers=AUTH).status_code == 200
+    assert len(client.get('/api/admin/wishes', headers=AUTH).json()) == 8
+    assert client.get(public_url).json()['wish']['id'] != target
+    assert client.post(public_url + '/wishes', json=bodies[-1]).status_code == 409
+    assert client.post(public_url + '/wishes', json=wish()).status_code == 409
+    with sqlite3.connect(store.path) as connection:
+        assert connection.execute('SELECT COUNT(*) FROM deleted_wish_requests').fetchone()[0] == 2
+        assert connection.execute('SELECT COUNT(*) FROM wishes WHERE id = ?', (target,)).fetchone()[0] == 0
+
+
+def test_deleted_wish_retry_is_rejected_even_before_limit(client):
+    invite = family(client)
+    url = f"/api/invitations/{invite['token']}/wishes"
+    body = wish(message='No volver a mostrar')
+    saved = client.post(url, json=body).json()
+    assert client.delete(f"/api/admin/wishes/{saved['id']}", headers=AUTH).status_code == 200
+    assert client.post(url, json=body).status_code == 409
+    assert client.get(url.removesuffix('/wishes')).json()['wish'] is None
+    assert client.post(url, json=wish()).status_code == 201
+
+
 @pytest.mark.parametrize("changes", [
     {"author": " "}, {"author": "a" * 81}, {"message": " "}, {"message": "m" * 601},
     {"author": 9}, {"message": False}, {"clientRequestId": "not-a-uuid"},
@@ -233,7 +266,7 @@ def test_legacy_database_migration_preserves_event_family_rsvp_and_runs_once(set
         response = client.put(f"/api/invitations/{invite['token']}/rsvp", json={"attending": True, "guestCount": 3}).json()
     # Exact original three-table database state, no version metadata or v2 objects.
     with sqlite3.connect(settings.database_path) as connection:
-        for table in ["admin_sessions", "wishes", "event_sections", "schema_migrations"]:
+        for table in ["deleted_wish_requests", "admin_sessions", "wishes", "event_sections", "schema_migrations"]:
             connection.execute("DROP TABLE " + table)
         connection.execute("ALTER TABLE invitations DROP COLUMN token_ciphertext")
     for _ in range(2):
@@ -243,7 +276,7 @@ def test_legacy_database_migration_preserves_event_family_rsvp_and_runs_once(set
             assert payload["rsvp"] == response
             assert payload["sections"] == DEFAULT_SECTIONS.model_dump(by_alias=True)
     with sqlite3.connect(settings.database_path) as connection:
-        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [(1,), (2,), (3,), (4,)]
+        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [(1,), (2,), (3,), (4,), (5,)]
 
 
 def test_unknown_future_schema_fails_closed(settings):

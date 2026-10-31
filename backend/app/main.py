@@ -196,6 +196,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> list[AdminWish]:
         return store.list_wishes(limit=limit, offset=offset, q=q.strip())
 
+    @admin.delete("/wishes/{wish_id}")
+    def delete_wish(wish_id: Annotated[UUID, Path()], store: DatabaseDep) -> dict[str, bool]:
+        store.delete_wish(str(wish_id))
+        return {"deleted": True}
+
     @admin.post("/invitations", status_code=201)
     def create_invitation(invitation: InvitationCreate, store: DatabaseDep) -> CreatedInvitation:
         return store.create_invitation(invitation)

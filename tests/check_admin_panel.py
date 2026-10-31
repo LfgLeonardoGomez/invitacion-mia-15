@@ -137,6 +137,10 @@ def inspect(browser, width, height):
             else:
                 item.update(body)
                 fulfill(route, item)
+        elif path.startswith('/wishes/') and request.method == 'DELETE':
+            assert request.headers.get('x-csrf-token') == csrf
+            wishes[:] = [wish for wish in wishes if wish['id'] != path.removeprefix('/wishes/')]
+            fulfill(route, {'deleted': True})
         elif path == "/wishes":
             text = query.get("q", [""])[0].lower()
             searches.append(("wishes", text))
@@ -287,6 +291,13 @@ def inspect(browser, width, height):
         page.wait_for_function("document.querySelectorAll('.wish-card').length === 1")
         assert ("wishes", "script") in searches
         page.locator("#wish-search").fill("")
+        page.locator('.wish-card button').click()
+        page.locator('#confirm-cancel').click()
+        assert len(wishes) == 1
+        page.locator('.wish-card button').click()
+        page.locator('#confirm-accept').click()
+        page.wait_for_function("document.getElementById('wishes-status').textContent.includes('Deseo eliminado')")
+        assert not wishes
         page.locator('[data-filter="declined"]').click()
         page.wait_for_function("document.querySelectorAll('.guest-row').length === 1")
         assert page.locator(".guest-name").inner_text() == "Familia Segunda"
